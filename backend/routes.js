@@ -33,6 +33,15 @@ function auth(req, res, next) {
 }
 router.use(auth);
 router.get('/auth/me', (req, res) => res.json(req.user));
+router.get('/env-check', (req, res) => {
+  res.json({
+    hasGroq: !!process.env.GROQ_API_KEY,
+    groqLen: (process.env.GROQ_API_KEY || '').length,
+    hasTursoUrl: !!process.env.TURSO_DATABASE_URL,
+    hasTursoToken: !!process.env.TURSO_AUTH_TOKEN,
+    port: process.env.PORT,
+  });
+});
 
 // ---------- settings ----------
 router.get('/settings', async (req, res) => res.json(await getSettings()));
