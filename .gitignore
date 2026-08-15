@@ -21,3 +21,5 @@ Thumbs.db
 npm-debug.log*run-log.txt
 render-service-id.txt
 backend/run-log.txt
+backend/run-log.txt
+*.txt
