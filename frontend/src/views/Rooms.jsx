@@ -7,7 +7,7 @@ export default function Rooms() {
   const [showNew, setShowNew] = useState(false);
   const [showType, setShowType] = useState(false);
   const [form, setForm] = useState({ number: '', room_type_id: 1, floor: 1 });
-  const [typeForm, setTypeForm] = useState({ name: '', price: '', capacity: 2, description: '' });
+  const [typeForm, setTypeForm] = useState({ name: '', price: '', capacity: 2, description: '', amenities: '' });
 
   const load = () => { get('/rooms').then(setRooms).catch(() => {}); get('/room-types').then(setTypes).catch(() => {}); };
   useEffect(load, []);
@@ -23,6 +23,7 @@ export default function Rooms() {
     setShowType(false); load();
   };
   const setStatus = async (r, status) => { await put(`/rooms/${r.id}`, { status }); load(); };
+  const setHk = async (r, hk) => { await put(`/rooms/${r.id}`, { hk_status: hk }); load(); };
 
   return (
     <div>
@@ -40,10 +41,17 @@ export default function Rooms() {
               <div className="between"><span className="num">{r.number}</span><span className={'badge ' + r.status}>{r.status}</span></div>
               <div style={{ color: 'var(--muted)', fontSize: 12 }}>{r.type_name} · Floor {r.floor}</div>
               <div style={{ fontWeight: 700, color: 'var(--primary)' }}>₹{r.type_price}</div>
+              <div style={{ marginTop: 6 }}>
+                <span className={`badge ${r.hk_status === 'clean' ? 'available' : r.hk_status === 'dirty' ? 'occupied' : 'open'}`}>🧹 {r.hk_status}</span>
+              </div>
               <div className="row" style={{ marginTop: 8 }}>
                 {r.status !== 'occupied' && <button className="btn sm green" onClick={() => setStatus(r, 'occupied')}>Occupy</button>}
                 {r.status !== 'available' && <button className="btn sm" onClick={() => setStatus(r, 'available')}>Release</button>}
                 <button className="btn sm red" onClick={() => setStatus(r, r.status === 'maintenance' ? 'available' : 'maintenance')}>Maint.</button>
+              </div>
+              <div className="row" style={{ marginTop: 6 }}>
+                {r.hk_status !== 'clean' && <button className="btn sm" onClick={() => setHk(r, 'clean')}>Clean</button>}
+                {r.hk_status !== 'dirty' && <button className="btn sm" onClick={() => setHk(r, 'dirty')}>Dirty</button>}
               </div>
             </div>
           ))}
@@ -72,15 +80,16 @@ export default function Rooms() {
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h3>Room types</h3>
             <table style={{ margin: '10px 0' }}>
-              <thead><tr><th>Name</th><th>Price</th><th>Capacity</th></tr></thead>
+              <thead><tr><th>Name</th><th>Price</th><th>Capacity</th><th>Amenities</th></tr></thead>
               <tbody>
-                {types.map((t) => <tr key={t.id}><td>{t.name}</td><td>₹{t.price}</td><td>{t.capacity}</td></tr>)}
+                {types.map((t) => <tr key={t.id}><td>{t.name}</td><td>₹{t.price}</td><td>{t.capacity}</td><td style={{ fontSize: 12, color: 'var(--muted)' }}>{t.amenities}</td></tr>)}
               </tbody>
             </table>
-            <form onSubmit={addType} className="row" style={{ flexWrap: 'nowrap' }}>
-              <input placeholder="Name" value={typeForm.name} onChange={(e) => setTypeForm({ ...typeForm, name: e.target.value })} required />
+            <form onSubmit={addType} className="row" style={{ flexWrap: 'wrap' }}>
+              <input placeholder="Name" value={typeForm.name} onChange={(e) => setTypeForm({ ...typeForm, name: e.target.value })} required style={{ width: 140 }} />
               <input placeholder="Price" type="number" value={typeForm.price} onChange={(e) => setTypeForm({ ...typeForm, price: Number(e.target.value) })} required style={{ width: 90 }} />
               <input placeholder="Cap" type="number" value={typeForm.capacity} onChange={(e) => setTypeForm({ ...typeForm, capacity: Number(e.target.value) })} style={{ width: 70 }} />
+              <input placeholder="Amenities (comma sep)" value={typeForm.amenities} onChange={(e) => setTypeForm({ ...typeForm, amenities: e.target.value })} style={{ minWidth: 180 }} />
               <button className="btn primary">Add</button>
             </form>
             <button className="btn ghost" onClick={() => setShowType(false)}>Close</button>

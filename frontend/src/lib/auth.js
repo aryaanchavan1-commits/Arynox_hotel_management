@@ -27,3 +27,11 @@ export function verifyToken(token) {
 
 export function hash(pw, salt) { return crypto.scryptSync(pw, salt, 64).toString('hex'); }
 export const SALT = 'arynox';
+
+export function isStaffToken(payload) {
+  return !!payload && payload.kind !== 'guest';
+}
+
+export function isGuestToken(payload) {
+  return !!payload && payload.kind === 'guest';
+}

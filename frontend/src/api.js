@@ -1,8 +1,13 @@
 const BASE = '';
 
-const token = () => localStorage.getItem('arynox_token') || '';
+export const TOKEN_KEY = 'arynox_token';
+export const GUEST_TOKEN_KEY = 'arynox_guest_token';
+export const USER_KEY = 'arynox_user';
 
-export async function api(method, path, body) {
+const token = () => localStorage.getItem(TOKEN_KEY) || '';
+const guestToken = () => localStorage.getItem(GUEST_TOKEN_KEY) || '';
+
+export async function api(method, path, body, useGuest = false) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 25000);
   try {
@@ -10,7 +15,7 @@ export async function api(method, path, body) {
       method,
       headers: {
         'Content-Type': 'application/json',
-        Authorization: 'Bearer ' + token(),
+        Authorization: 'Bearer ' + (useGuest ? guestToken() : token()),
       },
       body: body ? JSON.stringify(body) : undefined,
       signal: ctrl.signal,
@@ -26,7 +31,8 @@ export async function api(method, path, body) {
   }
 }
 
-export const get = (p) => api('GET', p);
-export const post = (p, b) => api('POST', p, b);
-export const put = (p, b) => api('PUT', p, b);
+export const get = (p, useGuest) => api('GET', p, undefined, useGuest);
+export const post = (p, b, useGuest) => api('POST', p, b, useGuest);
+export const put = (p, b, useGuest) => api('PUT', p, b, useGuest);
+export const del = (p, useGuest) => api('DELETE', p, undefined, useGuest);
 export { BASE };

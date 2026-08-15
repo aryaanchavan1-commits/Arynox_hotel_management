@@ -44,5 +44,7 @@ timeout /t 7 /nobreak >nul
 start http://localhost:5173
 echo.
 echo All services started. Close the opened windows to stop them.
+echo Public site : http://localhost:5173
+echo Staff login : http://localhost:5173/#/staff/login
 echo Default login: admin / admin123
 pause

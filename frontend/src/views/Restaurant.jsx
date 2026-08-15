@@ -1,49 +1,85 @@
 import React, { useEffect, useState } from 'react';
-import { get, post } from '../api.js';
+import { get, post, put } from '../api.js';
 import ReceiptModal from '../components/ReceiptModal.jsx';
+import { useToast } from '../components/Toast.jsx';
 
 export default function Restaurant() {
+  const toast = useToast();
   const [menu, setMenu] = useState([]);
   const [orders, setOrders] = useState([]);
-  const [sel, setSel] = useState(null);       // selected order id
+  const [tables, setTables] = useState([]);
+  const [sel, setSel] = useState(null);
   const [receipt, setReceipt] = useState(null);
-  const [newTable, setNewTable] = useState('T1');
+  const [newTableId, setNewTableId] = useState('');
   const [taxRate, setTaxRate] = useState(5);
+  const [error, setError] = useState('');
 
   const load = () => {
     get('/menu').then(setMenu).catch(() => {});
     get('/orders').then(setOrders).catch(() => {});
+    get('/tables').then(setTables).catch(() => {});
     get('/settings').then((s) => s.tax_rate && setTaxRate(Number(s.tax_rate))).catch(() => {});
   };
   useEffect(load, []);
 
   const open = orders.find((o) => o.id === sel);
 
-  const newOrder = async () => {
-    const r = await post('/orders', { table_no: newTable });
-    setSel(r.id);
-    load();
+  const newOrder = async (table) => {
+    setError('');
+    try {
+      const t = table || tables.find((x) => x.status === 'free');
+      if (!t) return setError('No free table');
+      const r = await post('/orders', { table_no: t.number, table_id: t.id });
+      await put(`/tables/${t.id}`, { status: 'occupied' });
+      setSel(r.id);
+      toast(`Order #${r.id} opened at ${t.number}`);
+      load();
+    } catch (e) { setError(e.message); }
   };
   const addItem = async (mi) => {
     if (!sel) return;
     await post(`/orders/${sel}/items`, { items: [{ name: mi.name, price: mi.price, qty: 1 }] });
     load();
   };
+  const sendKot = async () => {
+    if (!sel) return;
+    const draft = (open.items || []).filter((i) => i.kot_status === 'draft');
+    if (draft.length === 0) return setError('Nothing to send to kitchen');
+    await post(`/orders/${sel}/kot`, { ids: draft.map((i) => i.id) });
+    toast('KOT sent to kitchen');
+    load();
+  };
   const pay = async (o) => {
     const r = await post(`/orders/${o.id}/pay`, { method: 'cash' });
     setReceipt(r.billId);
+    toast('Bill paid');
     load();
   };
 
   const cats = [...new Set(menu.map((m) => m.category))];
+  const freeTables = tables.filter((t) => t.status === 'free');
+  const busyTables = tables.filter((t) => t.status !== 'free');
 
   return (
     <div>
       <div className="between">
         <h1>🍽️ Restaurant</h1>
         <div className="row">
-          <input value={newTable} onChange={(e) => setNewTable(e.target.value)} style={{ width: 80 }} />
-          <button className="btn primary" onClick={newOrder}>➕ New Order</button>
+          <button className="btn primary" onClick={() => newOrder()} disabled={freeTables.length === 0}>➕ New Order</button>
+        </div>
+      </div>
+      {error && <div className="msg err" style={{ marginTop: 12 }}>{error}</div>}
+
+      <div className="card" style={{ marginTop: 14 }}>
+        <h3 style={{ marginBottom: 10 }}>Tables</h3>
+        <div className="row">
+          {tables.map((t) => (
+            <div key={t.id} className="menu-item" style={{ cursor: t.status === 'free' ? 'pointer' : 'not-allowed', opacity: t.status === 'free' ? 1 : 0.55 }}
+              onClick={() => t.status === 'free' && newOrder(t)}>
+              <div><b>{t.number}</b></div>
+              <div className="price" style={{ fontSize: 12, color: 'var(--muted)' }}>{t.status}</div>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -73,13 +109,19 @@ export default function Restaurant() {
             <>
               <div>
                 {(open.items || []).map((it, i) => (
-                  <div key={i} className="cart-item"><span>{it.item_name} ×{it.qty}</span><span>₹{(it.price * it.qty).toFixed(2)}</span></div>
+                  <div key={i} className="cart-item">
+                    <span>{it.item_name} ×{it.qty}</span>
+                    <span>₹{(it.price * it.qty).toFixed(2)} <span className={`badge ${it.kot_status === 'draft' ? 'occupied' : it.kot_status === 'new' ? 'open' : 'available'}`} style={{ fontSize: 9 }}>{it.kot_status}</span></span>
+                  </div>
                 ))}
               </div>
               <div className="row2" style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, margin: '10px 0' }}>
                 <span>Total (incl. {taxRate}% tax)</span><span>₹{(open.total * (1 + taxRate / 100)).toFixed(2)}</span>
               </div>
-              <button className="btn green" style={{ width: '100%' }} onClick={() => pay(open)}>💳 Pay & Print Receipt</button>
+              <div className="row" style={{ flexWrap: 'nowrap' }}>
+                <button className="btn primary" style={{ flex: 1 }} onClick={sendKot} disabled={!(open.items || []).some((i) => i.kot_status === 'draft')}>👨‍🍳 Send to Kitchen</button>
+                <button className="btn green" style={{ flex: 1 }} onClick={() => pay(open)} disabled={open.items.length === 0}>💳 Pay & Bill</button>
+              </div>
             </>
           )}
         </div>
@@ -96,7 +138,7 @@ export default function Restaurant() {
                 <td>{(o.items || []).map((i) => `${i.item_name}×${i.qty}`).join(', ')}</td>
                 <td>₹{o.total.toFixed(2)}</td>
                 <td><span className={'badge ' + o.status}>{o.status}</span></td>
-                <td>{o.status === 'open' ? <button className="btn sm" onClick={(e) => { e.stopPropagation(); setSel(o.id); }}>Edit</button> : <button className="btn sm" onClick={(e) => { e.stopPropagation(); setReceipt(null); }}>—</button>}</td>
+                <td>{o.status === 'paid' ? <span className="badge available">Paid</span> : <button className="btn sm" onClick={(e) => { e.stopPropagation(); setSel(o.id); }}>Open</button>}</td>
               </tr>
             ))}
           </tbody>

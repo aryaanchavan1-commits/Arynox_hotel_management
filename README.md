@@ -1,6 +1,6 @@
 # 🏨 Arynox_Hotel_ERP
 
-Complete web-based Hotel Management ERP — **Hotel + Restaurant + POS + AI Assistant + Thermal Receipt Printing**, branded **Arynox_Hotel_ERP**.
+Complete web-based Hotel Management ERP — **Public Guest Booking Website + Hotel + Restaurant + Kitchen Display + Housekeeping + POS + AI Assistant + Thermal Receipt Printing**, branded **Arynox_Hotel_ERP**.
 
 Built as a **single Next.js application** — the UI and the API live in one codebase and deploy to one Vercel project, so the app loads instantly with no separate server to connect to.
 
@@ -11,14 +11,17 @@ Built on top of 4 reference open-source hotel systems (kept in `reference/` for 
 - [gssoc2021-HotelOnTouch](https://github.com/ayan-biswas0412/gssoc2021-HotelOnTouch)
 
 ## ✨ Features
-- 🛏️ **Hotel**: rooms, room types, bookings, check-in / check-out / cancellation, guests database, auto billing on checkout
-- 🍽️ **Restaurant**: menu, table orders, kitchen-friendly order list, pay & print receipt
-- 💳 **POS**: tap-to-cart billing with Cash / Card / UPI, tax auto-calc
-- 🧾 **Receipts**: browser print, ESC/POS file download, and direct **thermal LAN printing** (port 9100 via local bridge)
-- 📈 **Reports**: live dashboard, occupancy %, revenue trends, per-room-type occupancy
-- 🤖 **AI Assistant** (Groq, llama-3.3-70b): ask "occupancy today?", "revenue?", "available rooms?", "find guest…" — answers from live data via function calling
-- ⚙️ **Settings**: editable brand name, address, phone and tax rate — printed on every receipt
-- 🗄️ **Database**: offline SQLite file locally (`backend/data/hotel.db`), **Turso (libSQL)** online — same code, auto-switches via env
+- 🌐 **Public guest website** (mobile-first): homepage, room showcase with amenities, availability search, online booking with reference number, **guest signup/login**, and a "My Bookings" portal to view/cancel own bookings. The public sees **only** the website — the ERP is hidden behind the staff login.
+- 🔐 **Staff login system**: username/password with roles (**admin, manager, reception, kitchen, restaurant, housekeeping**), role-based menus, user management, disable/enable accounts, reset passwords, dark mode.
+- 🛏️ **Hotel**: rooms, room types (amenities), room × night availability grid, bookings lifecycle (pending → confirmed → checked-in → checked-out), meal plans + extras, double-booking prevention, auto billing on checkout.
+- 🍽️ **Restaurant**: table management, menu, KOT (kitchen order tickets), **Kitchen Display System**, pay & print receipt.
+- 🧹 **Housekeeping**: task assignment, room cleanliness tracking (clean / dirty / in-progress).
+- 💳 **POS**: tap-to-cart billing with Cash / Card / UPI, tax auto-calc.
+- 🧾 **Receipts**: browser print, ESC/POS file download, and direct **thermal LAN printing** (port 9100 via local bridge).
+- 📈 **Reports**: live dashboard, occupancy %, revenue trends, per-room-type occupancy, revenue-by-source, CSV export of bills & revenue.
+- 🤖 **AI Assistant** (Groq, llama-3.3-70b): ask "occupancy today?", "revenue?", "available rooms?", "find guest…" — answers from live data via function calling.
+- ⚙️ **Settings**: editable brand name, address, phone, tax rate and welcome message — printed on every receipt.
+- 🗄️ **Database**: offline SQLite file locally (`backend/data/hotel.db`), **Turso (libSQL)** online — same code, auto-switches via env.
 
 ## 🚀 Run locally (Windows)
 ```bat
@@ -26,7 +29,10 @@ run.bat
 ```
 Starts the Next.js app (`:5173`) and printer bridge (`:8765`), opens the browser.
 
-Login: **admin / admin123** (also `reception / reception123`)
+- **Public site**: http://localhost:5173 (home, rooms, book, guest signup/login)
+- **Staff login**: http://localhost:5173/#/staff/login
+
+Staff logins (all seeded): **admin / admin123**, reception / reception123, manager / manager123, kitchen / kitchen123, restaurant / restaurant123, housekeeping / housekeeping123
 
 ## 🌐 Deploy
 Everything runs on **Vercel** (serverless) with **Turso** as the database — one project, no separate server to keep alive.
@@ -53,11 +59,12 @@ Live:
 ## 📁 Structure
 ```
 frontend/  Next.js app (UI + API): src/app (Next routes + /api/[...path] handler),
-           src/views (pages), src/components, src/lib (db, auth, receipt, ai)
+           src/views (pages incl. public + staff), src/components, src/lib (db, auth, roles, receipt, ai)
 backend/   printer bridge (local, port 8765); legacy Express API superseded by frontend/src/app/api
 reference/ 4 cloned open-source hotel systems
 scripts/   Turso database setup helper, logo + rebrand helpers
 run.bat    local launcher   deploy.ps1  cloud deploy (Vercel single project)
+specs/     feature spec (spec/plan/tasks/data-model/contracts/quickstart) for the ERP overhaul
 ```
 
 ## 🔐 Security note

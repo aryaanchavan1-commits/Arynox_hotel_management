@@ -1,20 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import Layout from './components/Layout.jsx';
-import { post } from './api.js';
+import PublicLayout from './components/PublicLayout.jsx';
+import { ToastProvider } from './components/Toast.jsx';
+import { ROLE_MODULES } from './lib/roles.js';
 import Dashboard from './views/Dashboard.jsx';
 import Rooms from './views/Rooms.jsx';
+import Availability from './views/Availability.jsx';
 import Bookings from './views/Bookings.jsx';
 import Guests from './views/Guests.jsx';
+import Users from './views/Users.jsx';
 import Restaurant from './views/Restaurant.jsx';
+import Kitchen from './views/Kitchen.jsx';
+import Housekeeping from './views/Housekeeping.jsx';
 import POS from './views/POS.jsx';
 import Reports from './views/Reports.jsx';
 import Assistant from './views/Assistant.jsx';
 import Settings from './views/Settings.jsx';
+import Login from './views/Login.jsx';
+import PublicHome from './views/PublicHome.jsx';
+import PublicRooms from './views/PublicRooms.jsx';
+import PublicBooking from './views/PublicBooking.jsx';
+import PublicConfirm from './views/PublicConfirm.jsx';
+import GuestSignup from './views/GuestSignup.jsx';
+import GuestLogin from './views/GuestLogin.jsx';
+import GuestMyBookings from './views/GuestMyBookings.jsx';
 
 function useHashRoute() {
-  const [route, setRoute] = useState(() => location.hash.replace('#/', '') || 'dashboard');
+  const [route, setRoute] = useState(() => location.hash.replace('#/', '') || '');
   useEffect(() => {
-    const fn = () => setRoute(location.hash.replace('#/', '') || 'dashboard');
+    const fn = () => setRoute(location.hash.replace('#/', '') || '');
     window.addEventListener('hashchange', fn);
     return () => window.removeEventListener('hashchange', fn);
   }, []);
@@ -23,68 +37,71 @@ function useHashRoute() {
 
 export default function App() {
   const [user, setUser] = useState(() => JSON.parse(localStorage.getItem('arynox_user') || 'null'));
-  const [err, setErr] = useState('');
-  const [tries, setTries] = useState(0);
+  const [guest, setGuest] = useState(() => JSON.parse(localStorage.getItem('arynox_guest_user') || 'null'));
+  const [confirm, setConfirm] = useState(null);
   const route = useHashRoute();
+  const seg = route.split('/');
 
-  useEffect(() => {
-    if (user) return;
-    let stop = false;
-    let timer;
-    const attempt = async (tries) => {
-      try {
-        const r = await post('/auth/login', { username: 'admin', password: 'admin123' });
-        if (stop) return;
-        localStorage.setItem('arynox_token', r.token);
-        localStorage.setItem('arynox_user', JSON.stringify(r.user));
-        setUser(r.user);
-      } catch (e2) {
-        if (stop) return;
-        if (tries >= 6) {
-          setErr(e2.message || 'Unable to connect to server');
-          return;
-        }
-        setErr('');
-        setTries(tries);
-        timer = setTimeout(() => attempt(tries + 1), 8000);
-      }
-    };
-    attempt(1);
-    return () => { stop = true; clearTimeout(timer); };
-  }, [user]);
+  const isStaffArea = seg[0] === 'staff';
+  const staffKey = isStaffArea ? (seg[1] || 'dashboard') : '';
+  const publicKey = isStaffArea ? '' : (seg[0] || 'home');
 
-  if (!user) {
-    return (
-      <div className="login-wrap">
-        <div className="login-card">
-          <img src="/logo.svg" alt="Arynox_Hotel_ERP" width="96" style={{ margin: '0 auto 8px', display: 'block' }} />
-          <h2>Arynox_Hotel_ERP</h2>
-          {err
-            ? <div>
-                <div className="msg err" style={{ marginTop: 14 }}>{err}</div>
-                <button className="btn primary" style={{ width: '100%', marginTop: 14 }} onClick={() => window.location.reload()}>Retry</button>
-              </div>
-            : <p style={{ color: 'var(--muted)' }}>Connecting to server…{tries > 0 ? ` (attempt ${tries + 1}/6)` : ''}</p>}
-        </div>
-      </div>
-    );
-  }
+  // staff logged in + visited a staff area -> show ERP
+  const showErp = user && isStaffArea;
+  // staff area without a session -> staff login screen
+  const showStaffLogin = !user && isStaffArea;
+  // public site routes (guest or anonymous)
+  const publicRoutes = {
+    home: <PublicHome />,
+    rooms: <PublicRooms />,
+    booking: <PublicBooking setConfirm={setConfirm} />,
+    confirm: <PublicConfirm confirm={confirm} setConfirm={setConfirm} />,
+    'guest/login': <GuestLogin onLogin={setGuest} />,
+    'guest/signup': <GuestSignup onLogin={setGuest} />,
+    'guest/my-bookings': <GuestMyBookings guest={guest} onLogout={() => { localStorage.removeItem('arynox_guest_token'); localStorage.removeItem('arynox_guest_user'); setGuest(null); }} />,
+    contact: <PublicHome />,
+  };
 
-  const pages = {
+  const staffPages = {
     dashboard: <Dashboard />,
     rooms: <Rooms />,
+    availability: <Availability />,
     bookings: <Bookings />,
     guests: <Guests />,
+    users: <Users user={user} />,
     restaurant: <Restaurant />,
+    kitchen: <Kitchen />,
+    housekeeping: <Housekeeping />,
     pos: <POS />,
     reports: <Reports />,
     assistant: <Assistant />,
     settings: <Settings />,
   };
 
+  // render public site
+  if (!isStaffArea) {
+    const page = publicRoutes[route] || publicRoutes.home;
+    return (
+      <PublicLayout guest={guest} onGuestLogout={() => { localStorage.removeItem('arynox_guest_token'); localStorage.removeItem('arynox_guest_user'); setGuest(null); }}>
+        {page}
+      </PublicLayout>
+    );
+  }
+
+  // staff login screen
+  if (showStaffLogin) {
+    return <Login onLogin={setUser} />;
+  }
+
+  // staff ERP
+  const mods = user ? ROLE_MODULES[user.role] || [] : [];
+  const allowedKey = mods.includes(staffKey) ? staffKey : (mods[0] || 'dashboard');
+  const page = staffPages[allowedKey] || <Dashboard />;
   return (
     <Layout user={user}>
-      {pages[route] || <Dashboard />}
+      <ToastProvider>
+        {page}
+      </ToastProvider>
     </Layout>
   );
 }

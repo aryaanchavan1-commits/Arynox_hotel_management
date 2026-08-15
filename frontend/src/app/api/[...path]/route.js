@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db, getSettings, ensureReady } from '@/lib/db';
-import { signToken, verifyToken, hash, SALT } from '@/lib/auth';
+import { signToken, verifyToken, hash, SALT, isGuestToken, isStaffToken } from '@/lib/auth';
+import { ROLES } from '@/lib/roles';
 import { buildEscPos, htmlReceipt } from '@/lib/receipt';
 import { chat } from '@/lib/ai';
 import { Groq } from 'groq-sdk';
@@ -16,6 +17,11 @@ function authUser(req, url) {
 
 async function body(req) {
   try { return await req.json(); } catch { return {}; }
+}
+
+function makeRef() {
+  const n = Math.floor(10000 + Math.random() * 89999);
+  return `ARY-${n}`;
 }
 
 async function roomPrice(roomId) {
@@ -35,15 +41,98 @@ async function handle(req, params) {
   if (path[0] === 'health' && method === 'GET') {
     return NextResponse.json({ ok: true, service: 'arynox-hotel-backend', time: new Date().toISOString() });
   }
+  if (path[0] === 'guest' && ['signup', 'login'].includes(path[1]) && method === 'POST') {
+    try { await ensureReady(); } catch (e) { return NextResponse.json({ error: 'Database unavailable, retrying…' }, { status: 503 }); }
+  }
+  if (path[0] === 'public' && ['hotels', 'bookings'].includes(path[1])) {
+    try { await ensureReady(); } catch (e) { return NextResponse.json({ error: 'Database unavailable, retrying…' }, { status: 503 }); }
+  }
+  if (path[0] === 'public' && path[1] === 'hotels' && method === 'GET') {
+    const s = await getSettings();
+    const types = (await db.execute('SELECT * FROM room_types ORDER BY price')).rows.map((t) => ({
+      ...t,
+      amenities: (t.amenities || '').split(',').map((x) => x.trim()).filter(Boolean),
+    }));
+    return NextResponse.json({
+      settings: {
+        hotel_name: s.hotel_name,
+        hotel_address: s.hotel_address,
+        hotel_phone: s.hotel_phone,
+        welcome_message: s.welcome_message,
+        currency_symbol: s.currency_symbol || '₹',
+      },
+      roomTypes: types,
+    });
+  }
+  if (path[0] === 'public' && path[1] === 'bookings' && method === 'POST') {
+    const b = await body(req);
+    const { room_type_id, check_in, check_out, adults, children, name, phone, email, id_type, id_number, address } = b;
+    if (!room_type_id || !check_in || !check_out || !name) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+    if (new Date(check_out) <= new Date(check_in)) return NextResponse.json({ error: 'Check-out must be after check-in' }, { status: 400 });
+    const busy = (await db.execute(
+      `SELECT DISTINCT room_id FROM bookings WHERE status NOT IN ('cancelled','checked_out') AND check_in < ? AND check_out > ?`,
+      [check_out, check_in]
+    )).rows.map((r) => Number(r.room_id));
+    const busySet = new Set(busy);
+    const free = (await db.execute(
+      `SELECT r.* FROM rooms r WHERE r.room_type_id=? AND r.status='available' ORDER BY r.number`, [room_type_id]
+    )).rows.find((r) => !busySet.has(Number(r.id)));
+    if (!free) return NextResponse.json({ error: 'No room available for the selected dates' }, { status: 409 });
+    // guest record
+    const g = await db.execute('INSERT INTO guests (name, phone, email, id_type, id_number, address) VALUES (?,?,?,?,?,?)',
+      [name, phone || '', email || '', id_type || 'passport', id_number || '', address || '']);
+    const guestId = Number(g.lastInsertRowid);
+    const auth = authUser(req, url);
+    const guestAccountId = isGuestToken(auth) ? Number(auth.gid) : 0;
+    const price = Number((await db.execute('SELECT price FROM room_types WHERE id=?', [room_type_id])).rows[0].price);
+    const total = price * nights(check_in, check_out);
+    const ref = makeRef();
+    const r = await db.execute(
+      `INSERT INTO bookings (guest_id, room_id, check_in, check_out, adults, children, status, total, meal_plan, extras_json, source, reference, guest_account_id)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      [guestId, free.id, check_in, check_out, adults || 1, children || 0, 'pending', total, 'room_only', '[]', 'online', ref, guestAccountId]);
+    return NextResponse.json({
+      reference: ref, total, check_in, check_out, room_number: free.number,
+      hotel_name: (await getSettings()).hotel_name, bookingId: Number(r.lastInsertRowid),
+    });
+  }
   if (path[0] === 'auth' && path[1] === 'login' && method === 'POST') {
+    try { await ensureReady(); } catch (e) { return NextResponse.json({ error: 'Database unavailable, retrying…' }, { status: 503 }); }
     const b = await body(req);
     const r = await db.execute('SELECT * FROM users WHERE username=?', [b.username]);
     const u = r.rows[0];
-    if (!u || u.password_hash !== hash(b.password || '', SALT)) {
+    if (!u || u.password_hash !== hash(b.password || '', SALT) || Number(u.enabled) !== 1) {
       return NextResponse.json({ error: 'Invalid username or password' }, { status: 401 });
     }
-    const token = signToken({ userId: u.id, username: u.username, name: u.name, role: u.role });
-    return NextResponse.json({ token, user: { name: u.name, role: u.role, username: u.username } });
+    const token = signToken({ kind: 'staff', userId: u.id, username: u.username, name: u.name, role: u.role });
+    return NextResponse.json({ token, user: { id: u.id, name: u.name, role: u.role, username: u.username } });
+  }
+
+  // public guest signup/login (kind=guest credentials)
+  if (path[0] === 'guest' && path[1] === 'signup' && method === 'POST') {
+    const b = await body(req);
+    if (!b.name || !b.email || !b.password) return NextResponse.json({ error: 'Name, email and password are required' }, { status: 400 });
+    if (String(b.password).length < 6) return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 });
+    const email = String(b.email).trim().toLowerCase();
+    const dup = (await db.execute('SELECT id FROM guest_accounts WHERE email=?', [email])).rows[0];
+    if (dup) return NextResponse.json({ error: 'An account with this email already exists' }, { status: 409 });
+    const r = await db.execute('INSERT INTO guest_accounts (name, email, phone, password_hash) VALUES (?,?,?,?)',
+      [String(b.name).trim(), email, String(b.phone || '').trim(), hash(b.password, SALT)]);
+    const token = signToken({ kind: 'guest', gid: Number(r.lastInsertRowid), name: String(b.name).trim(), email });
+    return NextResponse.json({ token, user: { id: Number(r.lastInsertRowid), name: String(b.name).trim(), email } });
+  }
+  if (path[0] === 'guest' && path[1] === 'login' && method === 'POST') {
+    const b = await body(req);
+    const email = String(b.email || '').trim().toLowerCase();
+    const r = await db.execute('SELECT * FROM guest_accounts WHERE email=?', [email]);
+    const g = r.rows[0];
+    if (!g || g.password_hash !== hash(b.password || '', SALT)) {
+      return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
+    }
+    const token = signToken({ kind: 'guest', gid: g.id, name: g.name, email: g.email });
+    return NextResponse.json({ token, user: { id: g.id, name: g.name, email: g.email } });
   }
 
   // everything else requires a valid token
@@ -52,9 +141,44 @@ async function handle(req, params) {
 
   try { await ensureReady(); } catch (e) { return NextResponse.json({ error: 'Database unavailable, retrying…' }, { status: 503 }); }
 
-  // ---------- auth ----------
+  // ---------- guest account endpoints (guest token only) ----------
+  if (isGuestToken(user)) {
+    if (path[0] === 'guest' && path[1] === 'my-bookings' && method === 'GET') {
+      const rows = (await db.execute(
+        `SELECT b.id, b.reference, b.check_in, b.check_out, b.adults, b.children, b.meal_plan, b.total, b.status, b.created_at,
+                r.number AS room_number, t.name AS room_type
+         FROM bookings b JOIN rooms r ON r.id=b.room_id JOIN room_types t ON t.id=r.room_type_id
+         WHERE b.guest_account_id=? ORDER BY b.id DESC`, [user.gid]
+      )).rows;
+      return NextResponse.json(rows);
+    }
+    if (path[0] === 'guest' && path[1] === 'bookings' && path[2] && path[3] === 'cancel' && method === 'POST') {
+      const b = (await db.execute('SELECT * FROM bookings WHERE id=? AND guest_account_id=?', [path[2], user.gid])).rows[0];
+      if (!b) return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
+      if (!['pending', 'confirmed'].includes(b.status)) return NextResponse.json({ error: 'This booking can no longer be cancelled' }, { status: 400 });
+      await db.execute("UPDATE bookings SET status='cancelled' WHERE id=?", [path[2]]);
+      await db.execute("UPDATE rooms SET status='available' WHERE id=?", [b.room_id]);
+      return NextResponse.json({ ok: true });
+    }
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
+
+  // ---------- staff auth ----------
   if (path[0] === 'auth' && path[1] === 'me' && method === 'GET') {
-    return NextResponse.json(user);
+    const u = (await db.execute('SELECT id, username, name, role FROM users WHERE id=?', [user.userId])).rows[0];
+    return NextResponse.json(u || user);
+  }
+  if (path[0] === 'auth' && path[1] === 'logout' && method === 'POST') {
+    return NextResponse.json({ ok: true });
+  }
+  if (path[0] === 'auth' && path[1] === 'password' && method === 'PUT') {
+    const b = await body(req);
+    const u = (await db.execute('SELECT * FROM users WHERE id=?', [user.userId])).rows[0];
+    if (!u || u.password_hash !== hash(b.oldPassword || '', SALT)) {
+      return NextResponse.json({ error: 'Current password is incorrect' }, { status: 401 });
+    }
+    await db.execute('UPDATE users SET password_hash=? WHERE id=?', [hash(b.newPassword || '', SALT), user.userId]);
+    return NextResponse.json({ ok: true });
   }
   if (path[0] === 'env-check' && method === 'GET') {
     return NextResponse.json({
@@ -76,16 +200,49 @@ async function handle(req, params) {
     return NextResponse.json(await getSettings());
   }
 
+  // ---------- users (admin / manager) ----------
+  const isAdminOrManager = ['admin', 'manager'].includes(user.role);
+  if (path[0] === 'users' && method === 'GET' && isAdminOrManager) {
+    const rows = (await db.execute('SELECT id, username, name, role, enabled FROM users ORDER BY id')).rows;
+    return NextResponse.json(rows);
+  }
+  if (path[0] === 'users' && method === 'POST' && user.role === 'admin') {
+    const { username, password, name, role } = await body(req);
+    if (!username || !password) return NextResponse.json({ error: 'Username and password required' }, { status: 400 });
+    if (!ROLES.includes(role)) return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
+    const dup = (await db.execute('SELECT id FROM users WHERE username=?', [username])).rows[0];
+    if (dup) return NextResponse.json({ error: 'Username already exists' }, { status: 409 });
+    await db.execute('INSERT INTO users (username, password_hash, name, role, enabled) VALUES (?,?,?,?,1)', [username, hash(password, SALT), name || username, role]);
+    return NextResponse.json({ ok: true });
+  }
+  if (path[0] === 'users' && path[1] && method === 'PUT' && user.role === 'admin') {
+    const { username, name, role, enabled } = await body(req);
+    await db.execute('UPDATE users SET username=?, name=?, role=?, enabled=? WHERE id=?', [username, name, role, enabled ? 1 : 0, path[1]]);
+    return NextResponse.json({ ok: true });
+  }
+  if (path[0] === 'users' && path[1] && path[2] === 'password' && method === 'POST' && user.role === 'admin') {
+    const { password } = await body(req);
+    if (!password) return NextResponse.json({ error: 'Password required' }, { status: 400 });
+    await db.execute('UPDATE users SET password_hash=? WHERE id=?', [hash(password, SALT), path[1]]);
+    return NextResponse.json({ ok: true });
+  }
+  if (path[0] === 'users' && method === 'GET' && !isAdminOrManager) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+  if (path[0] === 'users' && method === 'POST' && user.role !== 'admin') {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
   // ---------- room types & rooms ----------
   if (path[0] === 'room-types' && method === 'GET') return NextResponse.json((await db.execute('SELECT * FROM room_types')).rows);
   if (path[0] === 'room-types' && method === 'POST') {
-    const { name, price, capacity, description } = await body(req);
-    await db.execute('INSERT INTO room_types (name, price, capacity, description) VALUES (?,?,?,?)', [name, price, capacity, description || '']);
+    const { name, price, capacity, description, amenities, image } = await body(req);
+    await db.execute('INSERT INTO room_types (name, price, capacity, description, amenities, image) VALUES (?,?,?,?,?,?)', [name, price, capacity, description || '', amenities || '', image || '']);
     return NextResponse.json({ ok: true });
   }
   if (path[0] === 'room-types' && path[1] && method === 'PUT') {
-    const { name, price, capacity, description } = await body(req);
-    await db.execute('UPDATE room_types SET name=?, price=?, capacity=?, description=? WHERE id=?', [name, price, capacity, description, path[1]]);
+    const { name, price, capacity, description, amenities, image } = await body(req);
+    await db.execute('UPDATE room_types SET name=?, price=?, capacity=?, description=?, amenities=?, image=? WHERE id=?', [name, price, capacity, description, amenities || '', image || '', path[1]]);
     return NextResponse.json({ ok: true });
   }
 
@@ -97,12 +254,18 @@ async function handle(req, params) {
   }
   if (path[0] === 'rooms' && method === 'POST') {
     const { number, room_type_id, floor } = await body(req);
-    await db.execute('INSERT INTO rooms (number, room_type_id, floor, status) VALUES (?,?,?,?)', [number, room_type_id, floor || 1, 'available']);
+    await db.execute('INSERT INTO rooms (number, room_type_id, floor, status, hk_status) VALUES (?,?,?,?,?)', [number, room_type_id, floor || 1, 'available', 'clean']);
     return NextResponse.json({ ok: true });
   }
   if (path[0] === 'rooms' && path[1] && method === 'PUT') {
-    const { status } = await body(req);
-    await db.execute('UPDATE rooms SET status=? WHERE id=?', [status, path[1]]);
+    const { status, hk_status } = await body(req);
+    if (status !== undefined && hk_status !== undefined) {
+      await db.execute('UPDATE rooms SET status=?, hk_status=? WHERE id=?', [status, hk_status, path[1]]);
+    } else if (status !== undefined) {
+      await db.execute('UPDATE rooms SET status=? WHERE id=?', [status, path[1]]);
+    } else if (hk_status !== undefined) {
+      await db.execute('UPDATE rooms SET hk_status=? WHERE id=?', [hk_status, path[1]]);
+    }
     return NextResponse.json({ ok: true });
   }
 
@@ -130,25 +293,37 @@ async function handle(req, params) {
     return NextResponse.json(rows);
   }
   if (path[0] === 'bookings' && method === 'POST' && !path[1]) {
-    const { guest_id, room_id, check_in, check_out, adults, children, status } = await body(req);
+    const b = await body(req);
+    const { guest_id, room_id, check_in, check_out, adults, children, status, meal_plan, extras, source, reference, guest_account_id } = b;
     const price = await roomPrice(room_id);
     const total = price * nights(check_in, check_out);
+    // double-booking guard: reject if room already booked/occupied in overlapping dates
+    const overlap = (await db.execute(
+      `SELECT id FROM bookings WHERE room_id=? AND status NOT IN ('cancelled','checked_out') AND check_in < ? AND check_out > ?`,
+      [room_id, check_out, check_in]
+    )).rows[0];
+    if (overlap) return NextResponse.json({ error: 'Room is not available for the selected dates' }, { status: 409 });
+    const ref = reference || makeRef();
     const r = await db.execute(
-      'INSERT INTO bookings (guest_id, room_id, check_in, check_out, adults, children, status, total) VALUES (?,?,?,?,?,?,?,?)',
-      [guest_id, room_id, check_in, check_out, adults || 1, children || 0, status || 'confirmed', total]);
-    if (status !== 'confirmed') {
-      await db.execute('UPDATE rooms SET status=? WHERE id=?', [status === 'checked_in' ? 'occupied' : 'available', room_id]);
+      `INSERT INTO bookings (guest_id, room_id, check_in, check_out, adults, children, status, total, meal_plan, extras_json, source, reference, guest_account_id)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      [guest_id, room_id, check_in, check_out, adults || 1, children || 0, status || 'confirmed', total,
+       meal_plan || 'room_only', JSON.stringify(extras || []), source || 'staff', ref, guest_account_id || 0]);
+    if (status === 'checked_in') {
+      await db.execute("UPDATE rooms SET status='occupied' WHERE id=?", [room_id]);
     }
-    return NextResponse.json({ id: Number(r.lastInsertRowid), total });
+    return NextResponse.json({ id: Number(r.lastInsertRowid), total, reference: ref });
   }
   if (path[0] === 'bookings' && path[1] && path[2] === 'checkin' && method === 'POST') {
     const b = (await db.execute('SELECT * FROM bookings WHERE id=?', [path[1]])).rows[0];
+    if (!b || ['checked_out', 'cancelled'].includes(b.status)) return NextResponse.json({ error: 'Cannot check in this booking' }, { status: 400 });
     await db.execute("UPDATE bookings SET status='checked_in' WHERE id=?", [path[1]]);
-    await db.execute("UPDATE rooms SET status='occupied' WHERE id=?", [b.room_id]);
+    await db.execute("UPDATE rooms SET status='occupied', hk_status='clean' WHERE id=?", [b.room_id]);
     return NextResponse.json({ ok: true });
   }
   if (path[0] === 'bookings' && path[1] && path[2] === 'checkout' && method === 'POST') {
     const b = (await db.execute('SELECT * FROM bookings WHERE id=?', [path[1]])).rows[0];
+    if (!b) return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
     const g = (await db.execute('SELECT name FROM guests WHERE id=?', [b.guest_id])).rows[0];
     const bd = await body(req);
     const extra = Number(bd.extra || 0);
@@ -158,15 +333,17 @@ async function handle(req, params) {
     const tax = subtotal * taxRate;
     const total = subtotal + tax;
     const roomNumber = (await db.execute('SELECT number FROM rooms WHERE id=?', [b.room_id])).rows[0].number;
+    const extras = JSON.parse(b.extras_json || '[]');
     const items = JSON.stringify([
       { name: `Room ${nights(b.check_in, b.check_out)} night(s) - ${roomNumber}`, price: b.total, qty: 1 },
+      ...(extras.length > 0 ? extras.map((e) => ({ name: e.name, price: e.price, qty: e.qty || 1 })) : []),
       ...(extra > 0 ? [{ name: 'Extra charges', price: extra, qty: 1 }] : []),
     ]);
     const r = await db.execute(
       'INSERT INTO bills (type, ref_id, guest_id, guest_name, items_json, subtotal, tax, total, payment_method, paid) VALUES (?,?,?,?,?,?,?,?,?,1)',
-      ['ROOM', b.id, b.guest_id, g.name, items, subtotal, tax, total, bd.method || 'cash']);
+      ['ROOM', b.id, b.guest_id, g?.name || '', items, subtotal, tax, total, bd.method || 'cash']);
     await db.execute("UPDATE bookings SET status='checked_out' WHERE id=?", [path[1]]);
-    await db.execute("UPDATE rooms SET status='available' WHERE id=?", [b.room_id]);
+    await db.execute("UPDATE rooms SET status='available', hk_status='dirty' WHERE id=?", [b.room_id]);
     return NextResponse.json({ billId: Number(r.lastInsertRowid), total });
   }
   if (path[0] === 'bookings' && path[1] && path[2] === 'cancel' && method === 'POST') {
@@ -174,6 +351,67 @@ async function handle(req, params) {
     await db.execute("UPDATE bookings SET status='cancelled' WHERE id=?", [path[1]]);
     await db.execute("UPDATE rooms SET status='available' WHERE id=?", [b.room_id]);
     return NextResponse.json({ ok: true });
+  }
+  if (path[0] === 'bookings' && path[1] && path[2] === 'confirm' && method === 'POST') {
+    const b = (await db.execute('SELECT * FROM bookings WHERE id=?', [path[1]])).rows[0];
+    if (!b) return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
+    const overlap = (await db.execute(
+      `SELECT id FROM bookings WHERE room_id=? AND id!=? AND status NOT IN ('cancelled','checked_out') AND check_in < ? AND check_out > ?`,
+      [b.room_id, path[1], b.check_out, b.check_in]
+    )).rows[0];
+    if (overlap) return NextResponse.json({ error: 'Room is no longer available for the selected dates' }, { status: 409 });
+    await db.execute("UPDATE bookings SET status='confirmed' WHERE id=?", [path[1]]);
+    return NextResponse.json({ ok: true });
+  }
+  if (path[0] === 'bookings' && path[1] && path[2] === 'update' && method === 'POST') {
+    const b = (await db.execute('SELECT * FROM bookings WHERE id=?', [path[1]])).rows[0];
+    if (!b) return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
+    const bd = await body(req);
+    if (['checked_out', 'cancelled'].includes(b.status)) return NextResponse.json({ error: 'This booking can no longer be edited' }, { status: 400 });
+    const check_in = bd.check_in || b.check_in;
+    const check_out = bd.check_out || b.check_out;
+    const overlap = (await db.execute(
+      `SELECT id FROM bookings WHERE room_id=? AND id!=? AND status NOT IN ('cancelled','checked_out') AND check_in < ? AND check_out > ?`,
+      [b.room_id, path[1], check_out, check_in]
+    )).rows[0];
+    if (overlap) return NextResponse.json({ error: 'Room is not available for the selected dates' }, { status: 409 });
+    const price = Number(b.total) / Math.max(1, nights(b.check_in, b.check_out));
+    const total = price * nights(check_in, check_out);
+    await db.execute(
+      `UPDATE bookings SET check_in=?, check_out=?, adults=?, children=?, meal_plan=?, total=?, extras_json=? WHERE id=?`,
+      [check_in, check_out, bd.adults || b.adults, bd.children || b.children, bd.meal_plan || b.meal_plan, total, JSON.stringify(bd.extras || JSON.parse(b.extras_json || '[]')), path[1]]);
+    return NextResponse.json({ ok: true, total });
+  }
+
+  // ---------- availability ----------
+  if (path[0] === 'availability' && method === 'GET') {
+    const checkIn = url.searchParams.get('check_in');
+    const checkOut = url.searchParams.get('check_out');
+    const adults = Number(url.searchParams.get('adults') || 2);
+    if (!checkIn || !checkOut) return NextResponse.json({ error: 'check_in and check_out are required' }, { status: 400 });
+    const busy = (await db.execute(
+      `SELECT DISTINCT room_id FROM bookings WHERE status NOT IN ('cancelled','checked_out') AND check_in < ? AND check_out > ?`,
+      [checkOut, checkIn]
+    )).rows.map((r) => r.room_id);
+    const busySet = new Set(busy.map((id) => Number(id)));
+    const types = (await db.execute('SELECT * FROM room_types ORDER BY price')).rows;
+    const rooms = (await db.execute(
+      `SELECT r.*, t.name AS type_name, t.price AS type_price FROM rooms r JOIN room_types t ON t.id=r.room_type_id ORDER BY r.number`
+    )).rows;
+    const n = nights(checkIn, checkOut);
+    const freeRooms = rooms.filter((r) => r.status === 'available' && !busySet.has(Number(r.id)));
+    const result = types.map((t) => {
+      const fr = freeRooms.filter((r) => Number(r.room_type_id) === Number(t.id));
+      return {
+        ...t,
+        amenities: (t.amenities || '').split(',').map((s) => s.trim()).filter(Boolean),
+        total: Number(t.price) * n,
+        freeCount: fr.length,
+        freeRoomIds: fr.map((r) => r.id),
+        capacity: t.capacity,
+      };
+    });
+    return NextResponse.json({ nights: n, check_in: checkIn, check_out: checkOut, adults, roomTypes: result });
   }
 
   // ---------- restaurant menu ----------
@@ -189,7 +427,37 @@ async function handle(req, params) {
     return NextResponse.json({ ok: true });
   }
 
+  // ---------- restaurant tables ----------
+  if (path[0] === 'tables' && method === 'GET') return NextResponse.json((await db.execute('SELECT * FROM tables ORDER BY number')).rows);
+  if (path[0] === 'tables' && method === 'POST') {
+    const { number, seats } = await body(req);
+    await db.execute('INSERT INTO tables (number, seats, status) VALUES (?,?,?)', [number, seats || 4, 'free']);
+    return NextResponse.json({ ok: true });
+  }
+  if (path[0] === 'tables' && path[1] && method === 'PUT') {
+    const { seats, status } = await body(req);
+    if (seats !== undefined && status !== undefined) {
+      await db.execute('UPDATE tables SET seats=?, status=? WHERE id=?', [seats, status, path[1]]);
+    } else if (seats !== undefined) {
+      await db.execute('UPDATE tables SET seats=? WHERE id=?', [seats, path[1]]);
+    } else if (status !== undefined) {
+      await db.execute('UPDATE tables SET status=? WHERE id=?', [status, path[1]]);
+    }
+    return NextResponse.json({ ok: true });
+  }
+
   // ---------- restaurant orders ----------
+  if (path[0] === 'orders' && method === 'GET' && url.searchParams.get('scope') === 'kitchen') {
+    const rows = (await db.execute("SELECT * FROM orders WHERE status IN ('open','kot') ORDER BY id DESC LIMIT 50")).rows;
+    const out = [];
+    for (const o of rows) {
+      const items = (await db.execute("SELECT * FROM order_items WHERE order_id=? AND kot_status != 'served'", [o.id])).rows;
+      if (items.length === 0) continue;
+      const table = (await db.execute('SELECT number FROM tables WHERE id=?', [o.table_id])).rows[0];
+      out.push({ ...o, table_no: table?.number || o.table_no, items });
+    }
+    return NextResponse.json(out);
+  }
   if (path[0] === 'orders' && method === 'GET') {
     const rows = (await db.execute('SELECT * FROM orders ORDER BY id DESC LIMIT 50')).rows;
     for (const o of rows) {
@@ -200,13 +468,36 @@ async function handle(req, params) {
   }
   if (path[0] === 'orders' && method === 'POST' && !path[1]) {
     const b = await body(req);
-    const r = await db.execute('INSERT INTO orders (table_no, status) VALUES (?,?)', [b.table_no || 'T1', 'open']);
+    const r = await db.execute('INSERT INTO orders (table_no, status, table_id) VALUES (?,?,?)', [b.table_no || 'T1', 'open', b.table_id || 0]);
     return NextResponse.json({ id: Number(r.lastInsertRowid) });
   }
   if (path[0] === 'orders' && path[1] && path[2] === 'items' && method === 'POST') {
     const b = await body(req);
     for (const it of b.items) {
-      await db.execute('INSERT INTO order_items (order_id, item_name, price, qty) VALUES (?,?,?,?)', [path[1], it.name, it.price, it.qty]);
+      await db.execute('INSERT INTO order_items (order_id, item_name, price, qty, kot_status, kot_time) VALUES (?,?,?,?,?,?)',
+        [path[1], it.name, it.price, it.qty, it.kot_status || 'draft', it.kot_time || '']);
+    }
+    return NextResponse.json({ ok: true });
+  }
+  if (path[0] === 'orders' && path[1] && path[2] === 'kot' && method === 'POST') {
+    const b = await body(req);
+    const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    const ids = Array.isArray(b.ids) ? b.ids : [];
+    if (ids.length === 0) return NextResponse.json({ error: 'No items selected' }, { status: 400 });
+    const ph = ids.map(() => '?').join(',');
+    await db.execute(`UPDATE order_items SET kot_status='new', kot_time=? WHERE id IN (${ph})`, [now, ...ids]);
+    await db.execute("UPDATE orders SET status='kot' WHERE id=? AND status != 'paid'", [path[1]]);
+    return NextResponse.json({ ok: true });
+  }
+  if (path[0] === 'orders' && path[1] && path[2] === 'kot-status' && method === 'POST') {
+    const b = await body(req);
+    const st = b.status || 'served';
+    if (b.itemId) {
+      await db.execute('UPDATE order_items SET kot_status=? WHERE id=?', [st, b.itemId]);
+    } else if (b.ids) {
+      const ids = b.ids;
+      const ph = ids.map(() => '?').join(',');
+      await db.execute(`UPDATE order_items SET kot_status=? WHERE id IN (${ph})`, [st, ...ids]);
     }
     return NextResponse.json({ ok: true });
   }
@@ -224,7 +515,38 @@ async function handle(req, params) {
       'INSERT INTO bills (type, ref_id, guest_id, guest_name, items_json, subtotal, tax, total, payment_method, paid) VALUES (?,?,?,?,?,?,?,?,?,1)',
       ['RESTAURANT', o.id, 0, b.guest_name || '', itemsJson, subtotal, tax, total, b.method || 'cash']);
     await db.execute("UPDATE orders SET status='paid' WHERE id=?", [path[1]]);
+    if (o.table_id) await db.execute("UPDATE tables SET status='free' WHERE id=?", [o.table_id]);
     return NextResponse.json({ billId: Number(r.lastInsertRowid), total });
+  }
+
+  // ---------- housekeeping ----------
+  if (path[0] === 'housekeeping' && method === 'GET') {
+    const rows = (await db.execute(
+      `SELECT h.*, r.number AS room_number, r.status AS room_status FROM housekeeping_tasks h JOIN rooms r ON r.id=h.room_id ORDER BY h.id DESC LIMIT 100`
+    )).rows;
+    return NextResponse.json(rows);
+  }
+  if (path[0] === 'housekeeping' && method === 'POST') {
+    const { room_id, task, assignee, scheduled_at } = await body(req);
+    await db.execute('INSERT INTO housekeeping_tasks (room_id, task, assignee, status, scheduled_at) VALUES (?,?,?,?,?)',
+      [room_id, task || 'Full clean', assignee || '', 'pending', scheduled_at || '']);
+    await db.execute("UPDATE rooms SET hk_status='in-progress' WHERE id=?", [room_id]);
+    return NextResponse.json({ ok: true });
+  }
+  if (path[0] === 'housekeeping' && path[1] && method === 'PUT') {
+    const { status, assignee } = await body(req);
+    const task = (await db.execute('SELECT * FROM housekeeping_tasks WHERE id=?', [path[1]])).rows[0];
+    if (!task) return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+    if (status) {
+      await db.execute('UPDATE housekeeping_tasks SET status=? WHERE id=?', [status, path[1]]);
+      if (status === 'done') await db.execute("UPDATE rooms SET hk_status='clean' WHERE id=?", [task.room_id]);
+    }
+    if (assignee !== undefined) await db.execute('UPDATE housekeeping_tasks SET assignee=? WHERE id=?', [assignee, path[1]]);
+    return NextResponse.json({ ok: true });
+  }
+  if (path[0] === 'housekeeping' && path[1] && method === 'DELETE') {
+    await db.execute('DELETE FROM housekeeping_tasks WHERE id=?', [path[1]]);
+    return NextResponse.json({ ok: true });
   }
 
   // ---------- POS ----------
@@ -282,13 +604,27 @@ async function handle(req, params) {
     const rev = (await db.execute('SELECT COALESCE(SUM(total),0) s, COUNT(*) n FROM bills WHERE substr(created_at,1,10)=?', [today])).rows[0];
     const checkins = (await db.execute("SELECT COUNT(*) c FROM bookings WHERE status='checked_in'")).rows[0];
     const guests = (await db.execute('SELECT COUNT(*) c FROM guests')).rows[0];
-    const openOrders = (await db.execute("SELECT COUNT(*) c FROM orders WHERE status='open'")).rows[0];
+    const openOrders = (await db.execute("SELECT COUNT(*) c FROM orders WHERE status IN ('open','kot')")).rows[0];
+    const pending = (await db.execute("SELECT COUNT(*) c FROM bookings WHERE status='pending'")).rows[0];
+    const byType = (await db.execute(
+      `SELECT type, COALESCE(SUM(total),0) s, COUNT(*) n FROM bills WHERE substr(created_at,1,10)=? GROUP BY type`, [today]
+    )).rows.map((r) => ({ type: r.type, revenue: Number(r.s), count: Number(r.n) }));
+    const hkPending = (await db.execute("SELECT COUNT(*) c FROM housekeeping_tasks WHERE status != 'done'")).rows[0];
     return NextResponse.json({
       totalRooms: Number(total.c), occupiedRooms: Number(occupied.c),
       occupancy: Math.round((Number(occupied.c) / Math.max(1, Number(total.c))) * 100),
       revenueToday: Number(rev.s), billsToday: Number(rev.n),
       checkedIn: Number(checkins.c), totalGuests: Number(guests.c), openOrders: Number(openOrders.c),
+      pendingBookings: Number(pending.c), hkTasksPending: Number(hkPending.c), revenueByType: byType,
     });
+  }
+  if (path[0] === 'reports' && path[1] === 'bills' && method === 'GET') {
+    const days = Math.min(90, Number(url.searchParams.get('days') || 30));
+    const rows = (await db.execute(
+      `SELECT * FROM bills WHERE created_at >= datetime('now', ?) ORDER BY id DESC LIMIT 500`, [`-${days} days`]
+    )).rows;
+    for (const b of rows) b.items = JSON.parse(b.items_json || '[]');
+    return NextResponse.json(rows);
   }
   if (path[0] === 'reports' && path[1] === 'daily' && method === 'GET') {
     const days = Math.min(30, Number(url.searchParams.get('days') || 7));

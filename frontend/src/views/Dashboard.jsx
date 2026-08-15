@@ -17,6 +17,9 @@ export default function Dashboard() {
     ['#16a34a', "Today's Revenue", s ? fmt(s.revenueToday) : '—'],
     ['#d97706', 'Checked In', s ? s.checkedIn : '—'],
     ['#0891b2', 'Available Rooms', s ? s.totalRooms - s.occupiedRooms : '—'],
+    ['#7c3aed', 'Pending Bookings', s ? s.pendingBookings : '—'],
+    ['#db2777', 'Open Restaurant Orders', s ? s.openOrders : '—'],
+    ['#ea580c', 'Housekeeping Tasks', s ? s.hkTasksPending : '—'],
   ];
 
   return (

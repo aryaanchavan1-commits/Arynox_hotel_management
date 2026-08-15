@@ -37,14 +37,25 @@ CREATE TABLE IF NOT EXISTS users (
   username TEXT UNIQUE NOT NULL,
   password_hash TEXT NOT NULL,
   name TEXT NOT NULL,
-  role TEXT NOT NULL DEFAULT 'staff'
+  role TEXT NOT NULL DEFAULT 'staff',
+  enabled INTEGER DEFAULT 1
+);
+CREATE TABLE IF NOT EXISTS guest_accounts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  email TEXT UNIQUE NOT NULL,
+  phone TEXT DEFAULT '',
+  password_hash TEXT NOT NULL,
+  created_at TEXT DEFAULT (datetime('now'))
 );
 CREATE TABLE IF NOT EXISTS room_types (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
   price REAL NOT NULL,
   capacity INTEGER NOT NULL DEFAULT 2,
-  description TEXT DEFAULT ''
+  description TEXT DEFAULT '',
+  amenities TEXT DEFAULT '',
+  image TEXT DEFAULT ''
 );
 CREATE TABLE IF NOT EXISTS rooms (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -52,6 +63,7 @@ CREATE TABLE IF NOT EXISTS rooms (
   room_type_id INTEGER NOT NULL,
   floor INTEGER DEFAULT 1,
   status TEXT DEFAULT 'available',
+  hk_status TEXT DEFAULT 'clean',
   FOREIGN KEY (room_type_id) REFERENCES room_types(id)
 );
 CREATE TABLE IF NOT EXISTS guests (
@@ -74,6 +86,11 @@ CREATE TABLE IF NOT EXISTS bookings (
   children INTEGER DEFAULT 0,
   status TEXT DEFAULT 'confirmed',
   total REAL DEFAULT 0,
+  meal_plan TEXT DEFAULT 'room_only',
+  extras_json TEXT DEFAULT '[]',
+  source TEXT DEFAULT 'staff',
+  reference TEXT DEFAULT '',
+  guest_account_id INTEGER DEFAULT 0,
   created_at TEXT DEFAULT (datetime('now')),
   FOREIGN KEY (guest_id) REFERENCES guests(id),
   FOREIGN KEY (room_id) REFERENCES rooms(id)
@@ -89,6 +106,7 @@ CREATE TABLE IF NOT EXISTS orders (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   table_no TEXT DEFAULT 'T1',
   status TEXT DEFAULT 'open',
+  table_id INTEGER DEFAULT 0,
   created_at TEXT DEFAULT (datetime('now'))
 );
 CREATE TABLE IF NOT EXISTS order_items (
@@ -96,7 +114,25 @@ CREATE TABLE IF NOT EXISTS order_items (
   order_id INTEGER NOT NULL,
   item_name TEXT NOT NULL,
   price REAL NOT NULL,
-  qty INTEGER NOT NULL DEFAULT 1
+  qty INTEGER NOT NULL DEFAULT 1,
+  kot_status TEXT DEFAULT 'draft',
+  kot_time TEXT DEFAULT ''
+);
+CREATE TABLE IF NOT EXISTS tables (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  number TEXT UNIQUE NOT NULL,
+  seats INTEGER DEFAULT 4,
+  status TEXT DEFAULT 'free'
+);
+CREATE TABLE IF NOT EXISTS housekeeping_tasks (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  room_id INTEGER NOT NULL,
+  task TEXT DEFAULT 'Full clean',
+  assignee TEXT DEFAULT '',
+  status TEXT DEFAULT 'pending',
+  scheduled_at TEXT DEFAULT '',
+  created_at TEXT DEFAULT (datetime('now')),
+  FOREIGN KEY (room_id) REFERENCES rooms(id)
 );
 CREATE TABLE IF NOT EXISTS bills (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -124,37 +160,81 @@ async function initSchema() {
   }
 }
 
+async function tableColumns(table) {
+  const r = await db.execute(`PRAGMA table_info(${table})`);
+  return new Set(r.rows.map((c) => c.name));
+}
+
+async function migrate() {
+  const cols = {
+    users: [['enabled', 'INTEGER DEFAULT 1']],
+    room_types: [['amenities', "TEXT DEFAULT ''"], ['image', "TEXT DEFAULT ''"]],
+    rooms: [['hk_status', "TEXT DEFAULT 'clean'"]],
+    bookings: [
+      ["meal_plan", "TEXT DEFAULT 'room_only'"],
+      ["extras_json", "TEXT DEFAULT '[]'"],
+      ["source", "TEXT DEFAULT 'staff'"],
+      ["reference", "TEXT DEFAULT ''"],
+      ['guest_account_id', 'INTEGER DEFAULT 0'],
+    ],
+    orders: [['table_id', 'INTEGER DEFAULT 0']],
+    order_items: [["kot_status", "TEXT DEFAULT 'draft'"], ["kot_time", "TEXT DEFAULT ''"]],
+  };
+  for (const [table, adds] of Object.entries(cols)) {
+    let existing;
+    try { existing = await tableColumns(table); } catch { continue; }
+    for (const [name, ddl] of adds) {
+      if (!existing.has(name)) {
+        try { await db.execute(`ALTER TABLE ${table} ADD COLUMN ${name} ${ddl}`); } catch (e) { /* ignore */ }
+      }
+    }
+  }
+}
+
 async function seed() {
   await initSchema();
+  await migrate();
   const crypto = await import('node:crypto');
   function hash(pw, salt) { return crypto.scryptSync(pw, salt, 64).toString('hex'); }
   const salt = 'arynox';
 
   const users = await db.execute('SELECT COUNT(*) AS c FROM users');
   if (Number(users.rows[0].c) === 0) {
-    await db.execute('INSERT INTO users (username, password_hash, name, role) VALUES (?, ?, ?, ?)', ['admin', hash('admin123', salt), 'Arynox_Hotel_ERP Admin', 'admin']);
-    await db.execute('INSERT INTO users (username, password_hash, name, role) VALUES (?, ?, ?, ?)', ['reception', hash('reception123', salt), 'Reception', 'staff']);
+    await db.execute('INSERT INTO users (username, password_hash, name, role, enabled) VALUES (?, ?, ?, ?, 1)', ['admin', hash('admin123', salt), 'Arynox_Hotel_ERP Admin', 'admin']);
+    await db.execute('INSERT INTO users (username, password_hash, name, role, enabled) VALUES (?, ?, ?, ?, 1)', ['reception', hash('reception123', salt), 'Reception', 'reception']);
+    await db.execute('INSERT INTO users (username, password_hash, name, role, enabled) VALUES (?, ?, ?, ?, 1)', ['manager', hash('manager123', salt), 'Manager', 'manager']);
+    await db.execute('INSERT INTO users (username, password_hash, name, role, enabled) VALUES (?, ?, ?, ?, 1)', ['kitchen', hash('kitchen123', salt), 'Kitchen Staff', 'kitchen']);
+    await db.execute('INSERT INTO users (username, password_hash, name, role, enabled) VALUES (?, ?, ?, ?, 1)', ['restaurant', hash('restaurant123', salt), 'Restaurant Waiter', 'restaurant']);
+    await db.execute('INSERT INTO users (username, password_hash, name, role, enabled) VALUES (?, ?, ?, ?, 1)', ['housekeeping', hash('housekeeping123', salt), 'Housekeeping', 'housekeeping']);
   }
 
   const rt = await db.execute('SELECT COUNT(*) AS c FROM room_types');
   if (Number(rt.rows[0].c) === 0) {
     const types = [
-      ['Standard Room', 1499, 2, 'Comfortable room with city view'],
-      ['Deluxe Room', 2499, 3, 'Spacious room with sea view'],
-      ['Suite', 4999, 4, 'Luxury suite with living area'],
-      ['Presidential Suite', 9999, 5, 'Ultimate luxury experience'],
+      ['Standard Room', 1499, 2, 'Comfortable room with city view', 'Wi-Fi, AC, TV, Work desk, Tea/coffee maker', ''],
+      ['Deluxe Room', 2499, 3, 'Spacious room with sea view', 'Wi-Fi, AC, TV, Mini bar, Balcony, Work desk', ''],
+      ['Suite', 4999, 4, 'Luxury suite with living area', 'Wi-Fi, AC, TV, Mini bar, Balcony, Bathtub, Sofa, Kitchenette', ''],
+      ['Presidential Suite', 9999, 5, 'Ultimate luxury experience', 'Wi-Fi, AC, TV, Mini bar, Jacuzzi, Butler, Private dining, Smart home', ''],
     ];
-    for (const [name, price, cap, desc] of types) {
-      await db.execute('INSERT INTO room_types (name, price, capacity, description) VALUES (?, ?, ?, ?)', [name, price, cap, desc]);
+    for (const [name, price, cap, desc, amenities, image] of types) {
+      await db.execute('INSERT INTO room_types (name, price, capacity, description, amenities, image) VALUES (?, ?, ?, ?, ?, ?)', [name, price, cap, desc, amenities, image]);
     }
     const rooms = [];
     for (let f = 1; f <= 4; f++) {
       for (let n = 1; n <= 5; n++) {
         const typeId = ((f + n) % 4) + 1;
-        rooms.push([`${f}0${n}`, typeId, f, 'available']);
+        rooms.push([`${f}0${n}`, typeId, f, 'available', 'clean']);
       }
     }
-    for (const r of rooms) await db.execute('INSERT INTO rooms (number, room_type_id, floor, status) VALUES (?, ?, ?, ?)', r);
+    for (const r of rooms) await db.execute('INSERT INTO rooms (number, room_type_id, floor, status, hk_status) VALUES (?, ?, ?, ?, ?)', r);
+  }
+
+  const tables = await db.execute('SELECT COUNT(*) AS c FROM tables');
+  if (Number(tables.rows[0].c) === 0) {
+    for (let i = 1; i <= 10; i++) {
+      const seats = i % 4 === 0 ? 8 : i % 2 === 0 ? 4 : 2;
+      await db.execute('INSERT INTO tables (number, seats, status) VALUES (?, ?, ?)', [`T${i}`, seats, 'free']);
+    }
   }
 
   const menu = await db.execute('SELECT COUNT(*) AS c FROM menu_items');
@@ -179,6 +259,10 @@ async function seed() {
   await db.execute(migrateBrand('hotel_address', 'Arynox Hotel ERP, Tech Park, Pune, India'));
   await db.execute(migrateBrand('hotel_phone', '+91 98765 43210'));
   await db.execute(migrateBrand('tax_rate', '5'));
+  await db.execute(`INSERT INTO hotel_settings (key, value) VALUES ('currency_symbol', '₹')
+     ON CONFLICT(key) DO UPDATE SET value=excluded.value`);
+  await db.execute(`INSERT INTO hotel_settings (key, value) VALUES ('welcome_message', 'Experience luxury and comfort at Arynox Hotel')
+     ON CONFLICT(key) DO UPDATE SET value=excluded.value`);
 }
 
 let ready = false;
