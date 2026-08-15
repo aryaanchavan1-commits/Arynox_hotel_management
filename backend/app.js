@@ -2,6 +2,7 @@ require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') }
 const express = require('express');
 const cors = require('cors');
 const { router } = require('./routes');
+const { ensureReady } = require('./db');
 
 const app = express();
 app.use(cors());
@@ -28,6 +29,14 @@ h1{margin:0 0 6px;color:#fff}code{background:#0f1430;padding:2px 8px;border-radi
     <li>Full API: rooms, bookings, guests, menu, orders, POS bills, reports, receipts (ESC/POS), AI chat</li>
   </ul>
 </div></body></html>`);
+});
+app.use(async (req, res, next) => {
+  try {
+    await ensureReady();
+    next();
+  } catch (e) {
+    res.status(503).json({ error: 'Database unavailable, retrying…' });
+  }
 });
 app.use('/api', router);
 

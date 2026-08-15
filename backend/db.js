@@ -165,7 +165,24 @@ async function seed() {
   await db.execute(migrateBrand('tax_rate', '5'));
 }
 
-seed().catch((e) => { console.error('[db] init failed', e); process.exit(1); });
+let ready = false;
+let initPromise = null;
+
+async function ensureReady() {
+  if (ready) return;
+  if (!initPromise) {
+    initPromise = seed()
+      .then(() => { ready = true; })
+      .catch((e) => {
+        console.error('[db] init failed, will retry on next request', e);
+        initPromise = null;
+        throw e;
+      });
+  }
+  return initPromise;
+}
+
+ensureReady().catch(() => {});
 
 async function getSettings() {
   const rows = await db.execute('SELECT * FROM hotel_settings');
@@ -174,4 +191,4 @@ async function getSettings() {
   return s;
 }
 
-module.exports = { db, getSettings, useTurso };
+module.exports = { db, getSettings, useTurso, ensureReady };
