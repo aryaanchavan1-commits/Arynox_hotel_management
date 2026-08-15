@@ -60,6 +60,7 @@ export default function PublicLayout({ guest, onGuestLogout, children }) {
         </div>
         <p style={{ marginTop: 8, fontSize: 12, color: '#8b93ad' }}>{brand?.footer_text || `${name}. All rights reserved.`}</p>
       </footer>
+      <a href="#/staff/login" className="staff-float" title="Staff / ERP login">🏨 ERP</a>
     </div>
   );
 }

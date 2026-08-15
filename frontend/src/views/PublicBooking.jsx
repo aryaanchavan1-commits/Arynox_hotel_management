@@ -2,6 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { get, post } from '../api.js';
 
 export default function PublicBooking({ setConfirm }) {
+  const fileToBase64 = (file) => new Promise((res) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(',')[1]);
+    r.readAsDataURL(file);
+  });
+
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [results, setResults] = useState(null);
@@ -9,6 +15,7 @@ export default function PublicBooking({ setConfirm }) {
   const [selected, setSelected] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({ name: '', phone: '', email: '', id_type: 'passport', id_number: '', address: '' });
+  const [idProof, setIdProof] = useState({ file: null, preview: null, error: '' });
   const [savedGuest, setSavedGuest] = useState(() => JSON.parse(localStorage.getItem('arynox_guest_user') || 'null'));
 
   useEffect(() => {
@@ -47,6 +54,12 @@ export default function PublicBooking({ setConfirm }) {
     e.preventDefault();
     if (!selected) return setError('Pick a room type');
     if (!form.name || !form.phone) return setError('Name and phone are required');
+    let proof = null;
+    if (idProof.file) {
+      if (!idProof.file.type.startsWith('image/')) return setError('ID proof must be an image (jpg/png)');
+      if (idProof.file.size > 2 * 1024 * 1024) return setError('ID proof image must be under 2MB');
+      proof = await fileToBase64(idProof.file);
+    }
     setSubmitting(true);
     setError('');
     try {
@@ -57,6 +70,9 @@ export default function PublicBooking({ setConfirm }) {
         adults: results.adults,
         children: 0,
         ...form,
+        id_proof_base64: proof || '',
+        id_proof_name: idProof.file ? idProof.file.name : '',
+        id_proof_mime: idProof.file ? idProof.file.type : '',
       });
       setConfirm(r);
       location.hash = '#/confirm';
@@ -134,6 +150,20 @@ export default function PublicBooking({ setConfirm }) {
               <div className="full">
                 <label>Address</label>
                 <textarea rows="2" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+              </div>
+              <div className="full">
+                <label>ID proof (passport / license / Aadhaar) — optional image</label>
+                <input type="file" accept="image/*" onChange={(e) => {
+                  const f = e.target.files[0];
+                  if (!f) return;
+                  if (!f.type.startsWith('image/')) return setIdProof({ file: null, preview: null, error: 'Must be an image (jpg/png)' });
+                  if (f.size > 2 * 1024 * 1024) return setIdProof({ file: null, preview: null, error: 'Image must be under 2MB' });
+                  const r = new FileReader();
+                  r.onload = () => setIdProof({ file: f, preview: r.result, error: '' });
+                  r.readAsDataURL(f);
+                }} />
+                {idProof.error && <div className="msg err" style={{ marginTop: 8 }}>{idProof.error}</div>}
+                {idProof.preview && <img src={idProof.preview} alt="preview" style={{ maxWidth: '100%', borderRadius: 8, marginTop: 8, maxHeight: 120, objectFit: 'cover' }} />}
               </div>
             </div>
             <button className="btn green" style={{ marginTop: 16, width: '100%' }} disabled={submitting}>

@@ -22,6 +22,9 @@ export default function PublicConfirm({ confirm, setConfirm }) {
           <div className="between"><b>Check-out</b><span>{confirm.check_out}</span></div>
           <div className="between"><b>Total</b><b>{confirm.currency_symbol || '₹'}{confirm.total}</b></div>
         </div>
+        <p className="sub" style={{ textAlign: 'center', fontSize: 12, marginTop: -6 }}>
+          Your booking is pending confirmation by our front desk. If you uploaded an ID proof, it will be reviewed.
+        </p>
         <a className="btn primary" href="#/" onClick={() => setConfirm(null)}>Back to home</a>{' '}
         <a className="btn" href="#/guest/my-bookings">My Bookings</a>
       </div>

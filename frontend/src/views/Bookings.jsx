@@ -3,7 +3,7 @@ import { get, post, put } from '../api.js';
 import ReceiptModal from '../components/ReceiptModal.jsx';
 import { useToast } from '../components/Toast.jsx';
 
-const fmt = (n) => '₹' + Number(n || 0).toLocaleString('en-IN');
+  const fmt = (cur, n) => (cur || '₹') + Number(n || 0).toLocaleString('en-IN');
 
 export default function Bookings() {
   const toast = useToast();
@@ -13,11 +13,14 @@ export default function Bookings() {
   const [show, setShow] = useState(false);
   const [receipt, setReceipt] = useState(null);
   const [checkout, setCheckout] = useState(null);
+  const [docView, setDocView] = useState(null);
+  const [currency, setCurrency] = useState('₹');
   const [error, setError] = useState('');
   const [form, setForm] = useState({ guest_id: '', room_id: '', check_in: '', check_out: '', adults: 1, children: 0, meal_plan: 'room_only', extras: [] });
 
   const load = () => {
     get('/bookings').then(setBookings).catch(() => {});
+    get('/settings').then((s) => setCurrency(s.currency_symbol || '₹')).catch(() => {});
     get('/guests').then((g) => setGuests(g.slice(0, 50))).catch(() => {});
     get('/rooms').then((r) => setRooms(r.filter((x) => x.status === 'available'))).catch(() => {});
   };
@@ -80,20 +83,23 @@ export default function Bookings() {
               <tr key={b.id}>
                 <td><b style={{ color: 'var(--primary)' }}>{b.reference || '#' + b.id}</b></td>
                 <td>{b.guest_name}<br /><small style={{ color: 'var(--muted)' }}>{b.guest_phone}</small></td>
-                <td>{b.room_number} <small style={{ color: 'var(--muted)' }}>({b.room_type})</small></td>
-                <td>{b.check_in} → {b.check_out}</td>
-                <td><small>{b.meal_plan?.replace('_', ' ')}</small></td>
-                <td><span className={`badge ${b.source === 'online' ? 'open' : 'available'}`}>{b.source}</span></td>
-                <td><span className={'badge ' + b.status}>{b.status}</span></td>
-                <td>{fmt(b.total)}</td>
-                <td>
-                  <div className="row" style={{ gap: 6 }}>
-                    {b.status === 'pending' && <button className="btn sm primary" onClick={() => act(b, 'confirm')}>Confirm</button>}
-                    {b.status === 'confirmed' && <button className="btn sm green" onClick={() => act(b, 'checkin')}>Check-in</button>}
-                    {b.status === 'checked_in' && <button className="btn sm primary" onClick={() => setCheckout(b)}>Check-out</button>}
-                    {['pending', 'confirmed'].includes(b.status) && <button className="btn sm red" onClick={() => act(b, 'cancel')}>Cancel</button>}
-                  </div>
-                </td>
+                 <td>{b.room_number} <small style={{ color: 'var(--muted)' }}>({b.room_type})</small></td>
+                 <td>{b.check_in} → {b.check_out}</td>
+                 <td><small>{b.meal_plan?.replace('_', ' ')}</small></td>
+                 <td><span className={`badge ${b.source === 'online' ? 'open' : 'available'}`}>{b.source}</span>
+                     {b.has_id_proof && <span className="badge" style={{ marginLeft: 6, background: '#0ea5e922', color: '#0ea5e9' }}>ID ✅</span>}
+                 </td>
+                 <td><span className={'badge ' + b.status}>{b.status}</span></td>
+                 <td>{fmt(currency, b.total)}</td>
+                 <td>
+                   <div className="row" style={{ gap: 6 }}>
+                     {b.has_id_proof && <button className="btn sm" title="View ID proof" onClick={async () => { const d = await get(`/bookings/${b.id}/document`); setDocView({ reference: b.reference, ...d }); }}>📎</button>}
+                     {b.status === 'pending' && <button className="btn sm primary" onClick={() => act(b, 'confirm')}>Confirm</button>}
+                     {b.status === 'confirmed' && <button className="btn sm green" onClick={() => act(b, 'checkin')}>Check-in</button>}
+                     {b.status === 'checked_in' && <button className="btn sm primary" onClick={() => setCheckout(b)}>Check-out</button>}
+                     {['pending', 'confirmed'].includes(b.status) && <button className="btn sm red" onClick={() => act(b, 'cancel')}>Cancel</button>}
+                   </div>
+                 </td>
               </tr>
             ))}
           </tbody>
@@ -168,7 +174,7 @@ export default function Bookings() {
         <div className="modal-backdrop" onClick={() => setCheckout(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h3>Check-out · {checkout.guest_name}</h3>
-            <p style={{ margin: '8px 0', color: 'var(--muted)' }}>Room {checkout.room_number} · {fmt(checkout.total)} base</p>
+             <p style={{ margin: '8px 0', color: 'var(--muted)' }}>Room {checkout.room_number} · {fmt(currency, checkout.total)} base</p>
             <label>Extra charges</label>
             <input type="number" id="co-extra" defaultValue="0" min="0" />
             <label style={{ marginTop: 10 }}>Payment method</label>
@@ -191,6 +197,21 @@ export default function Bookings() {
       )}
 
       {receipt && <ReceiptModal bill={{ id: receipt }} onClose={() => setReceipt(null)} isMinimal />}
+
+      {docView && (
+        <div className="modal-backdrop" onClick={() => setDocView(null)}>
+          <div className="modal" style={{ maxWidth: 640 }} onClick={(e) => e.stopPropagation()}>
+            <h3>ID proof — {docView.reference}</h3>
+            <p style={{ color: 'var(--muted)', fontSize: 13, marginTop: -10 }}>{docView.name} ({docView.mime})</p>
+            {docView.base64 ? (
+              <img src={`data:${docView.mime};base64,${docView.base64}`} alt="ID proof" style={{ maxWidth: '100%', borderRadius: 10, marginTop: 12 }} />
+            ) : (
+              <div className="empty" style={{ marginTop: 16 }}>No image data found.</div>
+            )}
+            <div className="modal-actions"><button className="btn" onClick={() => setDocView(null)}>Close</button></div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

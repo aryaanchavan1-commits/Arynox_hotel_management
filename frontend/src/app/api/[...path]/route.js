@@ -77,9 +77,13 @@ async function handle(req, params) {
   }
   if (path[0] === 'public' && path[1] === 'bookings' && method === 'POST') {
     const b = await body(req);
-    const { room_type_id, check_in, check_out, adults, children, name, phone, email, id_type, id_number, address } = b;
+       const { room_type_id, check_in, check_out, adults, children, name, phone, email, id_type, id_number, address,
+      id_proof_base64, id_proof_name, id_proof_mime } = b;
     if (!room_type_id || !check_in || !check_out || !name) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+    if (id_proof_base64 && String(id_proof_base64).length > 3_200_000) {
+      return NextResponse.json({ error: 'ID proof image too large (max 2MB)' }, { status: 413 });
     }
     if (new Date(check_out) <= new Date(check_in)) return NextResponse.json({ error: 'Check-out must be after check-in' }, { status: 400 });
     const busy = (await db.execute(
@@ -101,9 +105,10 @@ async function handle(req, params) {
     const total = price * nights(check_in, check_out);
     const ref = makeRef();
     const r = await db.execute(
-      `INSERT INTO bookings (guest_id, room_id, check_in, check_out, adults, children, status, total, meal_plan, extras_json, source, reference, guest_account_id)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-      [guestId, free.id, check_in, check_out, adults || 1, children || 0, 'pending', total, 'room_only', '[]', 'online', ref, guestAccountId]);
+      `INSERT INTO bookings (guest_id, room_id, check_in, check_out, adults, children, status, total, meal_plan, extras_json, source, reference, guest_account_id, id_proof_base64, id_proof_name, id_proof_mime)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      [guestId, free.id, check_in, check_out, adults || 1, children || 0, 'pending', total, 'room_only', '[]', 'online', ref, guestAccountId,
+       id_proof_base64 || '', id_proof_name || '', id_proof_mime || '']);
     return NextResponse.json({
       reference: ref, total, check_in, check_out, room_number: free.number,
       hotel_name: (await getSettings()).hotel_name,
@@ -296,14 +301,22 @@ async function handle(req, params) {
   }
 
   // ---------- bookings ----------
-  if (path[0] === 'bookings' && method === 'GET') {
+   if (path[0] === 'bookings' && !path[1] && method === 'GET') {
     const rows = (await db.execute(
-      `SELECT b.*, g.name AS guest_name, g.phone AS guest_phone, r.number AS room_number,
+      `SELECT b.id, b.guest_id, b.room_id, b.check_in, b.check_out, b.adults, b.children, b.status, b.total, b.meal_plan,
+              b.extras_json, b.source, b.reference, b.guest_account_id, b.created_at,
+              CASE WHEN b.id_proof_base64 IS NOT NULL AND b.id_proof_base64 != '' THEN 1 ELSE 0 END AS has_id_proof,
+              g.name AS guest_name, g.phone AS guest_phone, r.number AS room_number,
               t.name AS room_type FROM bookings b
        JOIN guests g ON g.id=b.guest_id JOIN rooms r ON r.id=b.room_id
        JOIN room_types t ON t.id=r.room_type_id ORDER BY b.id DESC LIMIT 200`
     )).rows;
     return NextResponse.json(rows);
+  }
+  if (path[0] === 'bookings' && path[1] && path[2] === 'document' && method === 'GET') {
+    const b = (await db.execute('SELECT id_proof_base64, id_proof_name, id_proof_mime, status, reference FROM bookings WHERE id=?', [path[1]])).rows[0];
+    if (!b) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    return NextResponse.json({ has_id_proof: !!(b.id_proof_base64), name: b.id_proof_name, mime: b.id_proof_mime, base64: b.id_proof_base64 || '', status: b.status, reference: b.reference });
   }
   if (path[0] === 'bookings' && method === 'POST' && !path[1]) {
     const b = await body(req);

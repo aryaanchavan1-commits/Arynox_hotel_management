@@ -49,6 +49,9 @@ export default function Settings() {
       <h1>⚙️ Settings</h1>
       {msg && <div className="msg ok">{msg}</div>}
       {err && <div className="msg err">{err}</div>}
+      <div className="between" style={{ marginBottom: 12 }}>
+        <a href="#/" target="_blank" rel="noreferrer" className="btn">👁️ Preview public site</a>
+      </div>
 
       <div className="card" style={{ marginTop: 16, maxWidth: 640 }}>
         <h3>Brand & billing</h3>

@@ -174,7 +174,8 @@ label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 4px
   background: linear-gradient(135deg, #141a2e 0%, #2a2f55 55%, var(--pub-primary, #4f46e5) 100%);
   color: #fff; border-radius: 18px; padding: 46px 32px; margin-bottom: 26px; text-align: center;
 }
-.public-hero h1 { font-size: 34px; margin-bottom: 10px; }
+.hero-inner { position: relative; z-index: 1; }
+.public-hero h1 { font-size: 34px; margin-bottom: 10px; position: relative; z-index: 1; }
 .public-hero .tag { color: #d5daf0; font-size: 16px; max-width: 640px; margin: 0 auto; opacity: .95; letter-spacing: .3px; }
 .public-hero .btn { margin-top: 20px; font-size: 15px; padding: 12px 26px; }
 .public-hero .btn.ghost { background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.4); color: #fff; }
@@ -196,6 +197,10 @@ label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 4px
   background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden;
   display: flex; flex-direction: column; transition: 0.18s;
 }
+.room-card-public {
+  background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden;
+  display: flex; flex-direction: column; transition: 0.18s;
+}
 .room-card-public:hover { box-shadow: 0 10px 28px rgba(16, 24, 60, 0.14); transform: translateY(-2px); }
 .room-card-public .img { height: 150px; background: linear-gradient(135deg, #2a2f55, var(--pub-primary, #4f46e5)); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 40px; }
 .room-card-public .body { padding: 14px 16px 18px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
@@ -206,6 +211,28 @@ label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 4px
 .room-card-public .amenities span { font-size: 11px; background: #eef0f8; border-radius: 20px; padding: 3px 8px; color: var(--muted); }
 [data-theme="dark"] .room-card-public .amenities span { background: #141a2e; }
 
+.flip-card {
+  perspective: 1000px; height: 100%;
+}
+.flip-inner {
+  position: relative; width: 100%; height: 100%; transition: transform 0.34s cubic-bezier(.25,.8,.25,1);
+  transform-style: preserve-3d;
+}
+.flip-card:hover .flip-inner { transform: rotateY(180deg); }
+.flip-face {
+  position: absolute; inset: 0; backface-visibility: hidden;
+  display: flex; flex-direction: column; overflow: hidden; border-radius: 14px;
+}
+.flip-front .img { height: 150px; }
+.flip-back {
+  background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+  flex-direction: column; padding: 18px 16px;
+  transform: rotateY(180deg);
+}
+.flip-back .amenities { margin: 8px 0; }
+.flip-back .price { color: var(--primary); }
+.flip-hint { margin-top: auto; color: #a5b4fc; fontSize: 11px; textAlign: center; padding: 4px 0 14px; opacity: .8; }
+
 .facilities { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
 .facility { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px; text-align: center; }
 .facility .icon { font-size: 30px; }
@@ -215,6 +242,16 @@ label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 4px
 .public-footer { background: #141a2e; color: #cbd2e4; padding: 26px 20px; text-align: center; font-size: 13px; }
 .public-footer .big { color: #fff; font-weight: 700; font-size: 16px; }
 .public-footer .link { color: #a5b4fc; }
+
+.staff-float {
+  position: fixed; right: 22px; bottom: 22px; z-index: 9999;
+  background: var(--pub-primary, #4f46e5); color: #fff; border-radius: 50%;
+  width: 56px; height: 56px; display: flex; align-items: center; justify-content: center;
+  font-size: 24px; text-decoration: none; box-shadow: 0 8px 24px rgba(16, 24, 60, 0.35);
+  border: 2px solid rgba(255,255,255,.4); backdrop-filter: blur(4px); transition: .18s;
+}
+.staff-float:hover { transform: translateY(-1px) scale(1.08); box-shadow: 0 12px 30px rgba(16, 24, 60, 0.5); }
+[data-theme="dark"] .staff-float { background: var(--pub-primary, #4f46e5); }
 
 .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
 .gallery .tile {
