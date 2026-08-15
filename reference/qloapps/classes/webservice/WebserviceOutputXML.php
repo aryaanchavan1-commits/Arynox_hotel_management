@@ -176,7 +176,7 @@ class WebserviceOutputXMLCore implements WebserviceOutputInterface
     }
     public function overrideContent($content)
     {
-        // changed QloApps in place of prestashop
+        // changed Arynox_Hotel_ERP in place of prestashop
         $xml = '<?xml version="1.0" encoding="UTF-8"?>'."\n";
         $xml .= '<qloapps xmlns:xlink="http://www.w3.org/1999/xlink">'."\n";
         $xml .= $content;

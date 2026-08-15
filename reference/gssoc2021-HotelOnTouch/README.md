@@ -1,15 +1,15 @@
-# HotelOnTouch
+# Arynox_Hotel_ERP
 
 <div align="centre">
 
 [![CodeFactor](https://www.codefactor.io/repository/github/ayan-biswas0412/gssoc2021-hotelontouch/badge)](https://www.codefactor.io/repository/github/ayan-biswas0412/gssoc2021-hotelontouch)
 [![Open Source Love svg1](https://badges.frapsoft.com/os/v1/open-source.svg?v=103)](https://github.com/ellerbrock/open-source-badges/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
-[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/ayan-biswas0412/gssoc2021-HotelOnTouch)
-![GitHub Pull Request](https://img.shields.io/github/issues-raw/ayan-biswas0412/gssoc2021-HotelOnTouch)
-![GitHub Issues](https://img.shields.io/github/issues-closed-raw/ayan-biswas0412/gssoc2021-HotelOnTouch)
-![GitHub Issues](https://img.shields.io/bitbucket/pr-raw/ayan-biswas0412/gssoc2021-HotelOnTouch)
-![GitHub forks](https://img.shields.io/github/forks/ayan-biswas0412/gssoc2021-HotelOnTouch?label=Fork&style=social)
+[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/ayan-biswas0412/gssoc2021-Arynox_Hotel_ERP)
+![GitHub Pull Request](https://img.shields.io/github/issues-raw/ayan-biswas0412/gssoc2021-Arynox_Hotel_ERP)
+![GitHub Issues](https://img.shields.io/github/issues-closed-raw/ayan-biswas0412/gssoc2021-Arynox_Hotel_ERP)
+![GitHub Issues](https://img.shields.io/bitbucket/pr-raw/ayan-biswas0412/gssoc2021-Arynox_Hotel_ERP)
+![GitHub forks](https://img.shields.io/github/forks/ayan-biswas0412/gssoc2021-Arynox_Hotel_ERP?label=Fork&style=social)
 
 </div>
 
@@ -26,11 +26,11 @@ This project aims to give a hands on experience to the beginners in their open s
 
 ## Project Modules
 
-1. [Main Website](https://github.com/ayan-biswas0412/gssoc2021-HotelOnTouch/tree/main/hotelontouch)(Main React Website)[![Netlify Status](https://api.netlify.com/api/v1/badges/367309b4-d08a-47dc-a775-62e6f548d222/deploy-status)](https://app.netlify.com/sites/hotelontouch/deploys)
-2. [Customer Facing Mobile App](https://github.com/ayan-biswas0412/gssoc2021-HotelOnTouch/tree/main/customerfrontend) (Android/IOS - development using React Native)
-3. [Hotel Admin Facing Web App](https://github.com/ayan-biswas0412/gssoc2021-HotelOnTouch/tree/main/hotel-admin-frontend) (Full Administrator access)
+1. [Main Website](https://github.com/ayan-biswas0412/gssoc2021-Arynox_Hotel_ERP/tree/main/hotelontouch)(Main React Website)[![Netlify Status](https://api.netlify.com/api/v1/badges/367309b4-d08a-47dc-a775-62e6f548d222/deploy-status)](https://app.netlify.com/sites/hotelontouch/deploys)
+2. [Customer Facing Mobile App](https://github.com/ayan-biswas0412/gssoc2021-Arynox_Hotel_ERP/tree/main/customerfrontend) (Android/IOS - development using React Native)
+3. [Hotel Admin Facing Web App](https://github.com/ayan-biswas0412/gssoc2021-Arynox_Hotel_ERP/tree/main/hotel-admin-frontend) (Full Administrator access)
 [![Netlify Status](https://api.netlify.com/api/v1/badges/bf151b70-a24d-442a-8353-ac90d90e6ae2/deploy-status)](https://app.netlify.com/sites/admin-hotelontouch/deploys)
-4. [Restaurant End Web App](https://github.com/ayan-biswas0412/gssoc2021-HotelOnTouch/tree/main/hotel-restraunt-frontend) (Same for Bar and Equivalent services)
+4. [Restaurant End Web App](https://github.com/ayan-biswas0412/gssoc2021-Arynox_Hotel_ERP/tree/main/hotel-restraunt-frontend) (Same for Bar and Equivalent services)
 [![Netlify Status](https://api.netlify.com/api/v1/badges/a7b909f2-4f34-4de9-b611-00eebff4a756/deploy-status)](https://app.netlify.com/sites/restraunt-hotelontouch/deploys)
 5. Laundry End Web App
 6. On Demand service booking Web App (vary hotel to hotel basis)
@@ -62,9 +62,9 @@ Deployment to Cloud using Github Actions (Advance Stage work)
 
 **This project is under active development**
 
-> Please have a look at our [Wiki](https://github.com/ayan-biswas0412/gssoc2021-HotelOnTouch/wiki) to understand the contributing guidelines properly and to know the project better.
+> Please have a look at our [Wiki](https://github.com/ayan-biswas0412/gssoc2021-Arynox_Hotel_ERP/wiki) to understand the contributing guidelines properly and to know the project better.
 
-Also Please read our [Contributing Guidelines](https://github.com/ayan-biswas0412/gssoc2021-HotelOnTouch/wiki/Contributing), [Code of Conduct](CODE_OF_CONDUCT.md) thoroughly.If you are visiting this repo first time and you want to contribute to this repo as a participant or a mentor please complete the [Onboarding Process](https://github.com/ayan-biswas0412/gssoc2021-HotelOnTouch/wiki/Contributor-Onboarding)
+Also Please read our [Contributing Guidelines](https://github.com/ayan-biswas0412/gssoc2021-Arynox_Hotel_ERP/wiki/Contributing), [Code of Conduct](CODE_OF_CONDUCT.md) thoroughly.If you are visiting this repo first time and you want to contribute to this repo as a participant or a mentor please complete the [Onboarding Process](https://github.com/ayan-biswas0412/gssoc2021-Arynox_Hotel_ERP/wiki/Contributor-Onboarding)
 
 ## Main motto
 
@@ -91,7 +91,7 @@ To make a completely open sourced in house hotel management system
 
 ## License
 
-HotelOnTouch is licensed under the GNU General Public License v3.0. Learn more about it in the [LICENSE](LICENSE) file.
+Arynox_Hotel_ERP is licensed under the GNU General Public License v3.0. Learn more about it in the [LICENSE](LICENSE) file.
 
 ## COVID-19<sup>Stay Home, Stay Safe!</sup>
 
@@ -137,7 +137,7 @@ _**[Ayan](https://www.ayanbiswas.me) :)**_
 
 ```javascript
 
-{thisRepo.url} = 'https://github.com/ayan-biswas0412/gssoc2021-HotelOnTouch/';
+{thisRepo.url} = 'https://github.com/ayan-biswas0412/gssoc2021-Arynox_Hotel_ERP/';
 
 if (thisRepo.isAwesome()) {
   thisRepo.fork(); // waiting for your awesome contributions :)
@@ -157,7 +157,7 @@ if (thisRepo.isAwesome()) {
 [![GSSoC](https://raw.githubusercontent.com/GirlScriptSummerOfCode/MentorshipProgram/master/GSsoc%20Type%20Logo%20Black.png)](https://gssoc.girlscript.tech)
 We got accepted for the GSSoC 2021 and actively looking for new participants,please feel free to ask questions in the discussion section of this repository and if you want to be our mentor please mention in the discussion.
 
-### Go to the [Wiki](https://github.com/ayan-biswas0412/gssoc2021-HotelOnTouch/wiki) for more information.
+### Go to the [Wiki](https://github.com/ayan-biswas0412/gssoc2021-Arynox_Hotel_ERP/wiki) for more information.
 
 
 ## Our Contributors:
@@ -166,8 +166,8 @@ We got accepted for the GSSoC 2021 and actively looking for new participants,ple
 <table>
 	<tr>
 		<td>
-   <a href="https://github.com/ayan-biswas0412/gssoc2021-HotelOnTouch/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=ayan-biswas0412/gssoc2021-HotelOnTouch" />
+   <a href="https://github.com/ayan-biswas0412/gssoc2021-Arynox_Hotel_ERP/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=ayan-biswas0412/gssoc2021-Arynox_Hotel_ERP" />
 </a>
 		</td>
 	</tr>

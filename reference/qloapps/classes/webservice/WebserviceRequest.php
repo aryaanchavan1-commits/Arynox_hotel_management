@@ -762,7 +762,7 @@ class WebserviceRequestCore
                 }
             }
             if ($this->hasErrors()) {
-                header('WWW-Authenticate: Basic realm="Welcome to QloApps Webservice, please enter the authentication key as the login. No password required."');
+                header('WWW-Authenticate: Basic realm="Welcome to Arynox_Hotel_ERP Webservice, please enter the authentication key as the login. No password required."');
                 $this->objOutput->setStatus(401);
                 return false;
             } else {
@@ -781,7 +781,7 @@ class WebserviceRequestCore
     protected function isActivated()
     {
         if (!Configuration::get('PS_WEBSERVICE')) {
-            $this->setError(503, 'The QloApps webservice is disabled. Please activate it in the QloApps Back Office', 22);
+            $this->setError(503, 'The Arynox_Hotel_ERP webservice is disabled. Please activate it in the Arynox_Hotel_ERP Back Office', 22);
             return false;
         }
         return true;

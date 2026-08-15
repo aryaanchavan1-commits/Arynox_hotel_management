@@ -23,7 +23,7 @@ function NavbarComponent() {
       variant="light"
     >
       <Navbar.Brand as={Link} to='/'>
-        <FontAwesomeIcon icon="building" /> HotelOnTouch
+        <FontAwesomeIcon icon="building" /> Arynox_Hotel_ERP
       </Navbar.Brand>
       <Navbar.Toggle aria-controls="responsive-navbar-nav" />
       <Navbar.Collapse id="responsive-navbar-nav">

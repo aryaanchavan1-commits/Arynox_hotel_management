@@ -8,7 +8,7 @@
 * https://opensource.org/license/osl-3-0-php
 * If you did not receive a copy of the license and are unable to
 * obtain it through the world-wide-web, please send an email
-* to support@qloapps.com so we can send you a copy immediately.
+* to support@arynoxhotelerp.com so we can send you a copy immediately.
 *
 * DISCLAIMER
 *
@@ -21,7 +21,7 @@
 * @license https://opensource.org/license/osl-3-0-php Open Software License version 3.0
 */
 
-class AdminQloappsChannelManagerConnectorController extends ModuleAdminController
+class AdminArynox_Hotel_ERPChannelManagerConnectorController extends ModuleAdminController
 {
     public function __construct()
     {

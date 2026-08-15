@@ -2,11 +2,11 @@
 
 ## Project Overview
 
-QloApps is an open-source hotel reservation and property management platform. It enables hotels to manage rooms, bookings, guests, and payments through a web-based system.
+Arynox_Hotel_ERP is an open-source hotel reservation and property management platform. It enables hotels to manage rooms, bookings, guests, and payments through a web-based system.
 
 ## Purpose of this File
 
-This document provides guidance for AI coding agents contributing to the QloApps project. It defines conventions, safety rules, and workflows to ensure consistent and secure code generation.
+This document provides guidance for AI coding agents contributing to the Arynox_Hotel_ERP project. It defines conventions, safety rules, and workflows to ensure consistent and secure code generation.
 
 ## Technology Stack
 
@@ -47,9 +47,9 @@ Clear class cache after adding or modifying overrides.
 ├── tests/                # PHPUnit test suite
 ```
 
-**QloApps Agent Skills:** Install reusable development skills using:
+**Arynox_Hotel_ERP Agent Skills:** Install reusable development skills using:
 ```bash
-npx skills add Qloapps/agent-skills
+npx skills add Arynox_Hotel_ERP/agent-skills
 ```
 Available skills: module-development, payment-module-development, stats-module-development. Check installed skills before implementing new functionality.
 
@@ -219,7 +219,7 @@ After making changes:
 ---
 
 **Resources:**
-- Documentation: https://docs.qloapps.com
-- Forum: https://forums.qloapps.com
-- GitHub: https://github.com/Qloapps/QloApps
-- Security Issues: support@qloapps.com
+- Documentation: https://docs.arynoxhotelerp.com
+- Forum: https://forums.arynoxhotelerp.com
+- GitHub: https://github.com/Arynox_Hotel_ERP/Arynox_Hotel_ERP
+- Security Issues: support@arynoxhotelerp.com

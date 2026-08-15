@@ -1,1 +1,1 @@
-**QloApps Data Cleaner 1.0.0**
+**Arynox_Hotel_ERP Data Cleaner 1.0.0**

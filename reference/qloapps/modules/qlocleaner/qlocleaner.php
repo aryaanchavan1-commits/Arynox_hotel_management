@@ -44,7 +44,7 @@ class QloCleaner extends Module
         $this->bootstrap = true;
         parent::__construct();
 
-        $this->displayName = $this->l('QloApps Data Cleaner');
+        $this->displayName = $this->l('Arynox_Hotel_ERP Data Cleaner');
         $this->description = $this->l('Check and fix functional integrity constraints and remove default data');
     }
 

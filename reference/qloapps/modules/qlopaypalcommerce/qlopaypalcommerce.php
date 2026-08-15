@@ -8,7 +8,7 @@
 * https://opensource.org/license/osl-3-0-php
 * If you did not receive a copy of the license and are unable to
 * obtain it through the world-wide-web, please send an email
-* to support@qloapps.com so we can send you a copy immediately.
+* to support@arynoxhotelerp.com so we can send you a copy immediately.
 *
 * DISCLAIMER
 *
@@ -51,7 +51,7 @@ class QloPaypalCommerce extends PaymentModule
         $this->html = '';
         $this->ps_versions_compliancy = array('min' => '1.6', 'max' => '1.6');
 
-        $this->displayName = $this->l('QloApps PayPal Checkout');
+        $this->displayName = $this->l('Arynox_Hotel_ERP PayPal Checkout');
 
         $this->description = '<b>'.$this->l('An instant global business.').'</b><br>';
 

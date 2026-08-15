@@ -49,27 +49,27 @@
 	</div>
 	<div class="col-sm-5">
 		<div class="footer-contact">
-			<a href="https://qloapps.com/contact/" class="footer_link _blank">
+			<a href="https://arynoxhotelerp.com/contact/" class="footer_link _blank">
 				<i class="icon-envelope"></i>
 				{l s='Contact'}
 			</a>
 			/&nbsp;
-			<a href="https://forums.qloapps.com/category/7/bug-report" class="footer_link _blank">
+			<a href="https://forums.arynoxhotelerp.com/category/7/bug-report" class="footer_link _blank">
 				<i class="icon-bug"></i>
 				{l s='Bug Tracker'}
 			</a>
 			/&nbsp;
-			<a href="https://forums.qloapps.com/" class="footer_link _blank">
+			<a href="https://forums.arynoxhotelerp.com/" class="footer_link _blank">
 				<i class="icon-comments"></i>
 				{l s='Forum'}
 			</a>
 			/&nbsp;
-			<a href="https://qloapps.com/addons/" class="footer_link _blank">
+			<a href="https://arynoxhotelerp.com/addons/" class="footer_link _blank">
 				<i class="icon-puzzle-piece"></i>
 				{l s='Addons'}
 			</a>
 			/&nbsp;
-			<a href="https://docs.qloapps.com/" class="footer_link _blank">
+			<a href="https://docs.arynoxhotelerp.com/" class="footer_link _blank">
 				<i class="icon-book"></i>
 				{l s='Training'}
 			</a>

@@ -40,7 +40,7 @@ if($usermail == true){
     <nav class="uppernav">
         <div class="logo">
             <img class="bluebirdlogo" src="../image/bluebirdlogo.png" alt="logo">
-            <p>BLUEBIRD</p>
+            <p>ARYNOX_HOTEL_ERP</p>
         </div>
         <div class="logout">
         <a href="../logout.php"><button class="btn btn-primary">Logout</button></a>

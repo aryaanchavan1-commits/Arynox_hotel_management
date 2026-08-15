@@ -311,12 +311,12 @@
 					{/if}
 
 					{if isset($upgrade_info->update_available) && $upgrade_info->update_available > 0}
-						<li class="hidden-md hidden-sm hidden-xs"><a href="{$upgrade_info->upgrade_url}">{l s='QloApps Update Availabe:'} {$upgrade_info->latest_availabe}</a></li>
+						<li class="hidden-md hidden-sm hidden-xs"><a href="{$upgrade_info->upgrade_url}">{l s='Arynox_Hotel_ERP Update Availabe:'} {$upgrade_info->latest_availabe}</a></li>
 					{/if}
 					<li class="hidden-sm hidden-xs">
-						<a target="_blank" href="https://qloapps.com/addons/" class="toolbar_btn" title="{l s='Explore QloApps Addons'}">
+						<a target="_blank" href="https://arynoxhotelerp.com/addons/" class="toolbar_btn" title="{l s='Explore Arynox_Hotel_ERP Addons'}">
 							<i class="icon-chain-broken"></i>
-							{l s='Explore QloApps Addons'}
+							{l s='Explore Arynox_Hotel_ERP Addons'}
 						</a>
 					</li>
 					{if {$base_url}}

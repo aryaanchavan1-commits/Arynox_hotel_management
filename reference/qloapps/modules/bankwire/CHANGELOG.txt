@@ -14,7 +14,7 @@
 ## Improved/Changed Features:
 
 * [FO] : [#724] Updated bankwire and cheque payment details on order confirmation page
-* [CO] : [#895] Fixed overbooking issues in QloApps and added new configurations for overbooking handling
+* [CO] : [#895] Fixed overbooking issues in Arynox_Hotel_ERP and added new configurations for overbooking handling
 * [CO] : [#881] Address is not required in booking/order flow
 * [FO] : [#1089] Fixed error on order confirmation page when order status is updated
 * [FO] : [#1272] Fixed order confirmation and Guest tracking flow issues and order emails are improved
@@ -25,7 +25,7 @@
 
 ## Improved/Changed Features:
 
-* [CO] : [#430] Updated QloApps order statuses
+* [CO] : [#430] Updated Arynox_Hotel_ERP order statuses
 * [CO] : [#436] Text changes
 * [CO] : [#608] Fix: Unable to remove disabled services from cart
 

@@ -134,7 +134,7 @@ class InstallControllerHttpSystem extends InstallControllerHttp
                     'title' => $this->l('Recommended PHP parameters'),
                     'success' => $this->tests['optional']['success'],
                     'checks' => array(
-                        'new_phpversion' => sprintf($this->l('You are using PHP %s version. Soon, the latest PHP version supported by QloApps will be PHP 8.1. To make sure you’re ready for the future, we recommend you to upgrade to PHP 8.1 now!'), phpversion()),
+                        'new_phpversion' => sprintf($this->l('You are using PHP %s version. Soon, the latest PHP version supported by Arynox_Hotel_ERP will be PHP 8.1. To make sure you’re ready for the future, we recommend you to upgrade to PHP 8.1 now!'), phpversion()),
                         'register_globals' => $this->l('PHP register_globals option is enabled'),
                         'gz' => $this->l('GZIP compression is not activated'),
                         'mbstring' => $this->l('Mbstring extension is not enabled'),

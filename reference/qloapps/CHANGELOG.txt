@@ -11,7 +11,7 @@
   - #1374: Added feature for admin to add/update multiple rooms at once in the room tab in room type page in the back office.
   - #1412: Added new option to add bed types for a room type in back office.
   - #1358: Added new service product addition while order add and edit and service price edit while order creation in Back-office
-  - #1399: Added standard product flow in QloApps
+  - #1399: Added standard product flow in Arynox_Hotel_ERP
   - #1495: Added registration number, fax detail and icons on contact us page in the front-office.
   - #1354: Added an option for the admin to skip sending order confirmation emails when creating a new order from the admin orders page in the back office.
   - #1369: Added Configuration option for the Admin to include or exclude the website name in the email subject.
@@ -114,9 +114,9 @@
   - #1356: Added new column 'planned checkout' in the hotel booking detail.
   - #1352: Updated the theme preview image in back office and front office block image on install page
   - #1347: Updated parameters in hook 'actionRoomReallocateAfter'.
-  - #1342: Added occupancy in the functions and their calls in the QloApps core.
-  - #1481: Added the current installed version of QloApps in the Database on install process.
-  - #1345: Removed Autoupgrade module from the QloApps core.
+  - #1342: Added occupancy in the functions and their calls in the Arynox_Hotel_ERP core.
+  - #1481: Added the current installed version of Arynox_Hotel_ERP in the Database on install process.
+  - #1345: Removed Autoupgrade module from the Arynox_Hotel_ERP core.
   - #1530: Updated: NOTICE OF LICENSE in the templates, css, php and js files
 
 - Bugs Fixed:
@@ -469,10 +469,10 @@
     - #1173: Updated the Meta data for the index page on install, and also updated some non translated text for some languages.
     - #1021: Improvement in the block navigation link module regarding CMS pages.
     - #960: Updated installation page design changes.
-    - #1200: Updated price Rounding process improved in entire QloApps system
+    - #1200: Updated price Rounding process improved in entire Arynox_Hotel_ERP system
     - #1174: Updated helper tree | Created a new helper tree class for generating tree
     - #1161: Updated id_address_delivery is now set as 0 by default
-    - #1156: Updated the demo data added to the database for the QloApps on installation.
+    - #1156: Updated the demo data added to the database for the Arynox_Hotel_ERP on installation.
     - #1141: Updated default invoice will be shown even in case of b2b invoice
     - #1140: Updated the hero image and its upload process.
     - #1111: Updated installation Assistant translations
@@ -482,18 +482,18 @@
     - #1079: Updated positions of Installer Assistant footer buttons
     - #951: Added values for columns 'price_calculation_method' and 'price_addition_type' for demo service products.
     - #1062: Updated htaccess files comptible with apache 2.2 and 2.4
-    - #1040: Updated Qloapps cleaner | Added hook for data cleaning in other module and fixed incorrect data being deleted.
+    - #1040: Updated Arynox_Hotel_ERP cleaner | Added hook for data cleaning in other module and fixed incorrect data being deleted.
     - #972: Improved Algo for response data and format
     - #950: Updated get localization pack details from qloapps api
     - #949: Updated version request while downloading language pack
     - #892: Updated use different prefixes for demo room numbers belonging to different room types
-    - #885: Updated address country of demo customer 'pub@qloapps.com' changed to website default country
+    - #885: Updated address country of demo customer 'pub@arynoxhotelerp.com' changed to website default country
     - #871: Updated tax of room type will be applied to auto add services having price added to room price
     - #842: Updated invoice tax panel content
     - #862: Updated order cancelation successful mail content
-    - #861: Updated when translating text in QloApps only update the fields that are changed
+    - #861: Updated when translating text in Arynox_Hotel_ERP only update the fields that are changed
     - #858: Updated recommendation section update process
-    - #768: Updated change cookie key prefix to QloApps
+    - #768: Updated change cookie key prefix to Arynox_Hotel_ERP
     - #783: Updated do not create multiple guest acounts with the same email, use previous one if available
     - #780: Updated replace 'shop' and 'shopping' with 'website' and 'booking' in email templates
     - #778: Updated add India to top countries in list of countries during installation
@@ -513,8 +513,8 @@
 - Bugs Fixed:
     - #717: Fixed DataForFrontSearch to dataForFrontSearch
     - #1260: Fixed jquery chosen, select and tinymce plugins used images not visible in different admin theme
-    - #1255: Fixed Localization pack not updating from correct resource during QloApps installation
-    - #1253: Fixed admin is able to select empty country during QloApps installation
+    - #1255: Fixed Localization pack not updating from correct resource during Arynox_Hotel_ERP installation
+    - #1253: Fixed admin is able to select empty country during Arynox_Hotel_ERP installation
     - #1250: Fixed Categories for demo service products are not created correctly on installation.
     - #1148: Fixed welcome voucher is available for every customer and also for guest user
     - #1090: Fixed cart rule restricted to a single customer is accessable to all customer when group restriction is applied
@@ -530,7 +530,7 @@
     - #1147: Fixed unable to find correct files for translating pdf and mail files
     - #1136: Fixed cancelled room service is visible when same room is added again in order
     - #1107: Fixed cookie not saving in browser when '+', '&', ')', '(' characters exists in Base URL
-    - #1104: Fixed order-opc page not opening when installed QloApps in Čeština (Czech) language
+    - #1104: Fixed order-opc page not opening when installed Arynox_Hotel_ERP in Čeština (Czech) language
     - #1100: Fixed calendar opens for pervious month of max order date is for current month
     - #1097: Fixed issues in Refund management flow and Improved Order cancellation flow
     - #1095: Fixed multiple coupons gets removed from cart when currency is changed
@@ -538,15 +538,15 @@
     - #1027: Fixed cart rule does not show under available coupons when cart rule is created from refund request
     - #1018: Fixed notices and display issue when there is no rooms and no hotel available.
     - #964: Fixed room type categories were not updated when hotel name or location is updated
-    - #945: Fixed data changes are not reflected when using the QloApps cache option
+    - #945: Fixed data changes are not reflected when using the Arynox_Hotel_ERP cache option
     - #931: Fixed js issue due to map if Google Maps API key is set and hotel location is not set
     - #921: Fixed pricing issue in order confirmation email
     - #909: Fixed missing translation from the templates of the modules.
     - #906: Fixed when no tax is applies on room extra services, service tax column is shown empty in invoice
     - #903: Fixed smarty index.php in smarty cache and compile directory gets deleted when clearing cache
-    - #895: Fixed overbooking issues in QloApps and added new configurations for overbooking handling
+    - #895: Fixed overbooking issues in Arynox_Hotel_ERP and added new configurations for overbooking handling
     - #872: Fixed invalid tax details in invoice and credit slips
-    - #857: Fixed exception while order crteation when country sent from API is not active in QloApps
+    - #857: Fixed exception while order crteation when country sent from API is not active in Arynox_Hotel_ERP
     - #848: Fixed wrong prices entered in order_detail table when "Round Type" setting is "Round on each item"
     - #843: Fixed friendly URL for search results page can not be changed
     - #1181: Fixed missing error message for OpenSSL extension during install system check step
@@ -575,12 +575,12 @@
 
 - Added Features:
   - #538: Added Feature service products
-  - #516: Added "Channel Manager Connector" module to QloApps
+  - #516: Added "Channel Manager Connector" module to Arynox_Hotel_ERP
   - #643: Add module Dashboard Insights to admin dashboard
   - #475: Added occupancy wise search and occupancy wise booking
   - #449: Added Modules catalog page
-  - #370: Added PayPal Payment in QloApps
-  - #370: Added Autoupgrade addon: Upgrade QloApps to latest available version
+  - #370: Added PayPal Payment in Arynox_Hotel_ERP
+  - #370: Added Autoupgrade addon: Upgrade Arynox_Hotel_ERP to latest available version
   - #463: Add 'Operations Today' section on admin dashboard
   - #435: Minimum and Maximum Length of stay restriction for room types
   - #449: Added smart addons recomendation section
@@ -592,8 +592,8 @@
   - #479: Added preparation time for bookings
   - #454: Customer can now create booking for someone else.
   - #593: Guest transformation to customer during registration at front office
-  - #490: Added "Hotel Availability and Rates search API" to QloApps
-  - #375: QloApps can now be installed without demo data
+  - #490: Added "Hotel Availability and Rates search API" to Arynox_Hotel_ERP
+  - #375: Arynox_Hotel_ERP can now be installed without demo data
 
 
 - Back Office:
@@ -605,7 +605,7 @@
     - #346: Remove unused room status from room type edit page
     - #347: Improve back office logos
     - #354: Remove Google Maps api from order detail page at back office
-    - #355: Added upper limit of PHP for QloApps installation
+    - #355: Added upper limit of PHP for Arynox_Hotel_ERP installation
     - #357: Remove module config links from Hotel Reservation System > Settings page
     - #376: Remove global price option when not needed from additional facilities…
     - #380: Add error messages for missing tests on Configuration Information page
@@ -680,7 +680,7 @@
     - #455: Fix Book Now page at back office
     - #461: Fix currency update issue on order creation page at back office
     - #466: Resolve issue when total order paid amont is in negative
-    - #473: Fix database exception issue on Book Now page at back office when multiple QloApps installations are present on the same domain
+    - #473: Fix database exception issue on Book Now page at back office when multiple Arynox_Hotel_ERP installations are present on the same domain
     - #481: Fixes module not installing from new catalog page
     - #486: Fix undefined variable issue on admin dashboard
     - #495: Added: missing re-allocation pop-up and improved design in book now page
@@ -740,7 +740,7 @@
 - Front Office:
   - Improvements:
     - #336: Remove order history link for guest account holders on order confirmation page
-    - #367: Updated meta generator tag to QloApps
+    - #367: Updated meta generator tag to Arynox_Hotel_ERP
     - #377: Add check-in and check-out time on room type detail page
     - #385: Improve front office header
     - #387: Add nav bar and move language and currency selector at top at front office
@@ -753,7 +753,7 @@
     - #536: Remove address deletion code from front office
     - #545: Added: check in - check out label on room type page
     - #548: Updated search result page booking option view
-    - #550: Updated QloApps search panel design
+    - #550: Updated Arynox_Hotel_ERP search panel design
     - #596: Remove refund ID column on refunds list page at front office
     - #624: Fix: Dropdown displaces on search result page when adding children in room
     - #630: Update navigation menu at front office
@@ -832,8 +832,8 @@
     - #415: Removed qlo_mod_list.xml
     - #420: Remove unused code and data from module hotelreservationsystem
     - #426: Replace _PS_MODULE_DIR_ with $this->_path in 'wkroomsearchblock' module
-    - #430: Updated QloApps order statuses
-    - #432: Updated Language pack resource will be downloaded from QloApps
+    - #430: Updated Arynox_Hotel_ERP order statuses
+    - #432: Updated Language pack resource will be downloaded from Arynox_Hotel_ERP
     - #443: Remove Google+ URL from blocksocial module
     - #447: Improvement of cart rule applied on orders and room types
     - #458: Replace module 'productcomments' with 'qlohotelreview'
@@ -856,10 +856,10 @@
     - #690: Update README.md
     - #431: Added gitignore file
     - #692: Updated: Recomendation section update and render process
-    - #342, #363, #436, #462, #470, #480, #543, #546, #561, #562, #569, #595, #618, #644, #658, #673, #686: Text related changes throughout QloApps
+    - #342, #363, #436, #462, #470, #480, #543, #546, #561, #562, #569, #595, #618, #644, #658, #673, #686: Text related changes throughout Arynox_Hotel_ERP
 
   - Bugs Fixed
-    - #329: PHP Version issue in Install of QloApps 1.5.2
+    - #329: PHP Version issue in Install of Arynox_Hotel_ERP 1.5.2
     - #394: Fix hotel city access method as introduced in tax flow changes
     - #416: Resolved wrong address while creating new booking
     - #425: Fix owl-carousel plugin loading issue for 'wktestimonialblock' module
@@ -936,7 +936,7 @@
 - Back Office
   - #297: Changed import button icon on Localization page
   - #310: Dashboard improvement
-  - #327: Resolved QloApps dashboard issues
+  - #327: Resolved Arynox_Hotel_ERP dashboard issues
 
 
 ## Bug Fixed:
@@ -955,7 +955,7 @@
   - #289: Validations added to the fields of "bookings" API for POST / PUT API requests
   - #307: Cart and Order API Issues resolved
   - #312: Text issues solved
-  - #321: Fixed QloApps installation issues
+  - #321: Fixed Arynox_Hotel_ERP installation issues
   - #324: Resolved compatibility issue with php5.6
 
 - Back Office:
@@ -980,7 +980,7 @@
   - #280: Wrong amount displayed in Order confirmation page in the payment gateways PaymentReturn Hook
   - #291: Resolved: Wrong price return by advance payment functions in HotelAdvancedPayment class
   - #295: Resolve DNI field issue during guest checkout
-  - #298, #274: QloApps text changes
+  - #298, #274: Arynox_Hotel_ERP text changes
   - #300: Room amenities name shown with feature icon in room type details page
   - #301: Unused CSS file htl-reservation-general.css and its classes are removed
   - #302: Resolved: On translating page checking and checkout dates are changed to NaN-NaN-NaN
@@ -1022,12 +1022,12 @@
   - #180: license file name changed from LICENSES to LICENSE
   - #181: Readme file improvements with more information and links
   - #221: dataforfrontsearch() function now calculate and provide "feature_price_diff" value in response
-  - #175: Changed QloApps versioning system (Ex: X.X.X.X)
-  - #175: Updated module compatibility check with QloApps version
+  - #175: Changed Arynox_Hotel_ERP versioning system (Ex: X.X.X.X)
+  - #175: Updated module compatibility check with Arynox_Hotel_ERP version
   - #215: "hotelreservationsystem.php" code optimization in hook "actionValidateOrder"
   - #117, #118, #119, #120, #121, #122, #134, #137, #138, #139: Changes for PHP7 compatibility
   - #178: Text Changes
-  - #198, #226: Multiple hooks are added in the different QloApps core files
+  - #198, #226: Multiple hooks are added in the different Arynox_Hotel_ERP core files
   - #217: `auto_generated` column in `address` table added to track address creation source
   - #207: New order states 'Partial payment accepted' and 'Awaiting partial payment' added for the partial payment
 
@@ -1079,7 +1079,7 @@
 
 ## Added Features:
 
-[+] CO : QloApps APIs are created (Prestashop APIs are modified as per hotel QloApps changes)
+[+] CO : Arynox_Hotel_ERP APIs are created (Prestashop APIs are modified as per hotel Arynox_Hotel_ERP changes)
 [+] CO : `is_advance_payment` column is added in the 'cart' table.
 [+] CO : `is_advance_payment`, `advance_paid_amount` columns are added in the 'orders' table.
 [+] CO : `id_transaction`, `payment_mode`, `refunded_amount`, `by_admin` columns are added in the 'order_return' table.
@@ -1124,14 +1124,14 @@
 [*] BO : Updated addons link from store to addon's page
 [*] BO : Added recomended image size for room type images for appropriate view on front end.
 
-[*] FO : Calendar Design is improved of date from and date to in QloApps.
+[*] FO : Calendar Design is improved of date from and date to in Arynox_Hotel_ERP.
 [*] FO : 'Proceed' button during checkout will be disabled in case of errors while checkout.
 [*] FO : Search panel is improved on all pages.
 [*] FO : Cart warning text changed
 [*] FO : Refund request proocess is improved for the customer. Designed is also improved.
 
 [*] CO : paypal adaptive module (by webkul) Removed completely from qloapps
-[*] CO : All the irrelevant data creation from the installation process is removed Which is not related to Qloapps but Prestashop. e.g  carriers, stores, suppliers, manufacturers...... etc. Order data will not be populated now.
+[*] CO : All the irrelevant data creation from the installation process is removed Which is not related to Arynox_Hotel_ERP but Prestashop. e.g  carriers, stores, suppliers, manufacturers...... etc. Order data will not be populated now.
 
 [*] CO : For refund request "order_return" and "order_return_detail" tables are used.
 [*] CO : For order refund states "order_return_states" table is used.
@@ -1184,7 +1184,7 @@
 [*] CO : Orders will be splitted now hotelwise. A new order will be created for each hotel.
 [*] CO : Trademark and powered by changed to webkul (from presatshop).
 [*] CO : Correct single quotes and double quotes of Class HotelBookingDetail.php
-[*] CO : Installed paypal module by prestashop by default while QloApps installation.
+[*] CO : Installed paypal module by prestashop by default while Arynox_Hotel_ERP installation.
 [*] CO : Translations are improved.
 
 ## Bug/Issues Resolved:
@@ -1211,7 +1211,7 @@
 ## Added Features:
 
 [+] CO : Additional facilities functionality is added.
-[+] CO : Almost all updates added to QloApps till the prestashop version 1.6.1.23.
+[+] CO : Almost all updates added to Arynox_Hotel_ERP till the prestashop version 1.6.1.23.
 
 
 ## Improved/changed features:
@@ -1226,15 +1226,15 @@
 [*] CO : config/smarty.config.inc.php improved (smartyHook() return improved)
 [*] CO : Security: Use Mcrypt’s CBC mode instead of the ECB mode.
 
-[*] CO : Almost all improvements/changes features added to QloApps till the prestashop version 1.6.1.23.
-[*] BO : All Stats Module compatible with QloApps
+[*] CO : Almost all improvements/changes features added to Arynox_Hotel_ERP till the prestashop version 1.6.1.23.
+[*] BO : All Stats Module compatible with Arynox_Hotel_ERP
 
 [*] FO : Room type details Page Design improved
 
 ## Bug/Issues Resolved:
 
-[-] CO : Almost all bugs resolved in QloApps till the prestashop version 1.6.1.23.
-[-] CO : Resolved :: QloApps Compatible with MySQL 5.7
+[-] CO : Almost all bugs resolved in Arynox_Hotel_ERP till the prestashop version 1.6.1.23.
+[-] CO : Resolved :: Arynox_Hotel_ERP Compatible with MySQL 5.7
 
 
 ####################################
@@ -1243,7 +1243,7 @@
 
 ## Added Features:
 
-[+] CO : pscleaner module is added for cleaning demo data from QloApps.
+[+] CO : pscleaner module is added for cleaning demo data from Arynox_Hotel_ERP.
 
 [+] FO : Option for Guest checkout is given at Preferences->Orders tab. So Guest Checkout is enabled.
 
@@ -1293,13 +1293,13 @@
 
 ## Added Features:
 
-[+] CO : Qloapps is compatible with php 7.x.x .
+[+] CO : Arynox_Hotel_ERP is compatible with php 7.x.x .
 
 
 ## Improved/changed features:
 
-[+] CO : "create demo data or not" option improved for Qloapps demo data .
-[+] CO : System compatibility check for Qloapps installation improved .
+[+] CO : "create demo data or not" option improved for Arynox_Hotel_ERP demo data .
+[+] CO : System compatibility check for Arynox_Hotel_ERP installation improved .
 
 
 
@@ -1309,11 +1309,11 @@
 
 ## Added Features:
 
-[+] CO : Qloapps is now GDPR compatible (changes are made in Qloapps according to Qloapps GDPR module).
+[+] CO : Arynox_Hotel_ERP is now GDPR compatible (changes are made in Arynox_Hotel_ERP according to Arynox_Hotel_ERP GDPR module).
 [+] CO : wkfooterpaymentblock :: Created a controller where admin will be able to create payment Blocks.
 [+] CO : wkfooterpaymentblock :: Admin will be able to enter Name , image and status of the payment block.
 [+] CO : wkfooterpaymentblock :: Admin will be able to position the payment blocks and payment image blocks will be shown to the customer as per their positions.
-[+] CO : Qloapps version compliancy code added for modules' installation
+[+] CO : Arynox_Hotel_ERP version compliancy code added for modules' installation
 
 [+] FO : On contact us page, design is changed.
 [+] FO : On contact us page contact header, contact content, global address are now dynamic. Enter values from AdminGeneralSettingsController.
@@ -1323,11 +1323,11 @@
 
 ## Improved/changed features:
 
-[+] CO : Missing multilang fields added where needed in Qloapps.
+[+] CO : Missing multilang fields added where needed in Arynox_Hotel_ERP.
 [+] CO : Tax name will be shown in the invoices now. (For GST purposes) - (enable tax breakdown is mandatory)
 [+] CO : logo.gif needed in the modules (module author:webkul)
-[+] CO : Removed prestashop from all the pages and emails of Qloapps.
-[+] CO : Changed all links of Qloapps according to the qloapps.com.
+[+] CO : Removed prestashop from all the pages and emails of Arynox_Hotel_ERP.
+[+] CO : Changed all links of Arynox_Hotel_ERP according to the arynoxhotelerp.com.
 [+] CO : Stopped sending info to prestashop while installation.
 
 [+] BO : Seperate configuration panel is made for location search panel in Hotel General Settings.
@@ -1335,8 +1335,8 @@
 
 ## Bug/Issues Resolved:
 
-[-] CO : Resolved :: Theme compilation issue on ajax while Qloapps installation
-[-] CO : Resolved :: Notice on Calls to functions Product::getProducts() in wkhoteleoom and Product::getSimpleProducts() in HotelHelper.php while installation of Qloapps.[Trying to get property of non-object]
+[-] CO : Resolved :: Theme compilation issue on ajax while Arynox_Hotel_ERP installation
+[-] CO : Resolved :: Notice on Calls to functions Product::getProducts() in wkhoteleoom and Product::getSimpleProducts() in HotelHelper.php while installation of Arynox_Hotel_ERP.[Trying to get property of non-object]
 
 [-] CO : Resolved :: hotelreservationsystem - Parent:: replaced with parent:: in classes/hotelHotelBranchInformation.php which was creating problems in installation.
 
@@ -1344,7 +1344,7 @@
 
 [-] BO : Resolved :: hotelreservationsystem:: Hotel images not saved while saving hotel details.
 [-] BO : Resolved :: hotelreservationsystem - $max_phone_digit is undefined issue resolved on hotel creation form.
-[-] BO : Resolved :: hotelreservationsystem:: HotelBookingDetail.php : phone number sent as string '0987654321'from 0987654321. Giving error while installing Qloapps with php7.0.0 .
+[-] BO : Resolved :: hotelreservationsystem:: HotelBookingDetail.php : phone number sent as string '0987654321'from 0987654321. Giving error while installing Arynox_Hotel_ERP with php7.0.0 .
 
 [-] BO : Resolved :: wktestimonialblock:: Error while saving or updating testimonials by admin.
 [-] BO : Resolved :: array_column is removed from AdminProductController [php version compatibility issue].
@@ -1447,7 +1447,7 @@
 
 [+] Project : Everywhere now prices are shown according to the feature prices.
 
-[+] Project : Everywhere prestashop logo is replaced with Qloapps logo
+[+] Project : Everywhere prestashop logo is replaced with Arynox_Hotel_ERP logo
 
 [+] BO : Feature price plans functionality has been added.
 [+] BO : Funnctionality to disable rooms for many dates is added.
@@ -1467,7 +1467,7 @@
 [+] CO : hotelreservationsystem : HotelRoomTypeFeaturePricing.php is added.
 [+] CO : hotelreservationsystem : ChannelOrderPayment.php is added.
 [+] CO : hotelreservationsystem : getRoomMinAdvPaymentAmount() is added in HotelAdvancedPayment.php.
-[+] CO : hotelreservationsystem : createQloAppsBookingByChannels(), createQloCustomerChannelCustomerInfo(), 									createQloCustomerAddressByChannelCustomerInfo(), createQloCartForBookingFromChannel(), ProcessCreateQloOrderForChannelBooking() 		are added for Qloapps Api need  in HotelBookingDetails.php.
+[+] CO : hotelreservationsystem : createArynox_Hotel_ERPBookingByChannels(), createQloCustomerChannelCustomerInfo(), 									createQloCustomerAddressByChannelCustomerInfo(), createQloCartForBookingFromChannel(), ProcessCreateQloOrderForChannelBooking() 		are added for Arynox_Hotel_ERP Api need  in HotelBookingDetails.php.
 [+] CO : hotelreservationsystem : 'total_price_tax_excl' and 'total_price_tax_incl' columns are added in `htl_booking_detail` table to 										store the booking time price.
 [+] CO : hotelreservationsystem : getProductFeaturePricePlanByDateByPriority(), getHotelCartBookingData() are added in 													HotelCartBookingData.php.
 [+] CO : hotelreservationsystem : 'disabled_dates' column is added in the table `htl_room_information`.

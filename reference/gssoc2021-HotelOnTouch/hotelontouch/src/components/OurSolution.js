@@ -16,7 +16,7 @@ const OurSolution = () => {
     const cardInfo = [
         {
             "name" : "Hotel Guest App",
-            "url" :"https://github.com/ayan-biswas0412/gssoc2021-HotelOnTouch/tree/main/customerfrontend",
+            "url" :"https://github.com/ayan-biswas0412/gssoc2021-Arynox_Hotel_ERP/tree/main/customerfrontend",
             "logo" :logo1
         },
         {

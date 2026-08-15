@@ -173,7 +173,7 @@ class AdminModulesControllerCore extends AdminController
     {
         // Refresh modules_list.xml every week
         if (!Tools::isFresh(Module::CACHE_FILE_MODULES_LIST, _TIME_1_DAY_) || $force_reload_cache) {
-            $xml_modules_list = _QLO_API_DOMAIN_.'/xml/'.str_replace('.', '', _QLOAPPS_VERSION_).'.xml';
+            $xml_modules_list = _QLO_API_DOMAIN_.'/xml/'.str_replace('.', '', _ARYNOX_HOTEL_ERP_VERSION_).'.xml';
             if (Tools::refresh(Module::CACHE_FILE_MODULES_LIST, 'https://'.$xml_modules_list)) {
                 $this->status = 'refresh';
             } elseif (Tools::refresh(Module::CACHE_FILE_MODULES_LIST, 'http://'.$xml_modules_list)) {

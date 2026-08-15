@@ -606,7 +606,7 @@ function initProductEvents()
                     // Close the occupancy block only if click element is not occupancy block OR close link of the occupancy block
                     if (!($(e.target).closest(".booking_occupancy_wrapper").length) || $(e.target).hasClass("close_occupancy_link")) {
                         $(occupancy_wrapper).parent().removeClass('open');
-                        $(document).trigger( "QloApps:updateRoomOccupancy", [occupancy_wrapper]);
+                        $(document).trigger( "Arynox_Hotel_ERP:updateRoomOccupancy", [occupancy_wrapper]);
                     }
 				}
 			}

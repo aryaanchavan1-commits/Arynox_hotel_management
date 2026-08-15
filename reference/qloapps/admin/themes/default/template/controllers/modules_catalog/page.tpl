@@ -7,7 +7,7 @@
 * https://opensource.org/license/osl-3-0-php
 * If you did not receive a copy of the license and are unable to
 * obtain it through the world-wide-web, please send an email
-* to support@qloapps.com so we can send you a copy immediately.
+* to support@arynoxhotelerp.com so we can send you a copy immediately.
 *
 * DISCLAIMER
 *
@@ -62,8 +62,8 @@
             </div>
         </div>
         <div class="panel explore-panel text-center">
-            {l s='Explore all addon of Qloapps'}&nbsp;
-            <a href="https://qloapps.com/addons/" class="btn btn-primary btn-lg">{l s='QloApps Addons'}</a>
+            {l s='Explore all addon of Arynox_Hotel_ERP'}&nbsp;
+            <a href="https://arynoxhotelerp.com/addons/" class="btn btn-primary btn-lg">{l s='Arynox_Hotel_ERP Addons'}</a>
         </div>
     {/if}
     {if isset($themes) && $themes}
@@ -112,8 +112,8 @@
             </div>
         </div>
         <div class="panel explore-panel text-center">
-            {l s='Explore all themes of QloApps'}&nbsp;
-            <a href="https://store.webkul.com/Qloapps/responsive.html" class="btn btn-primary btn-lg">{l s='QloApps Themes'}</a>
+            {l s='Explore all themes of Arynox_Hotel_ERP'}&nbsp;
+            <a href="https://store.webkul.com/Arynox_Hotel_ERP/responsive.html" class="btn btn-primary btn-lg">{l s='Arynox_Hotel_ERP Themes'}</a>
         </div>
     {/if}
 </div>

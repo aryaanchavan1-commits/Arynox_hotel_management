@@ -59,7 +59,7 @@ function Footer(){
                 <p>This project is completely open sourced and looking for contributors.
                 </p>
                 <div className="icons">
-                   <a href="https://github.com/ayan-biswas0412/gssoc2021-HotelOnTouch" style={{marginRight:'5px'}}><FontAwesomeIcon icon={faGithub} size='2x' color='white' style={{marginTop:'10px'}}/></a>
+                   <a href="https://github.com/ayan-biswas0412/gssoc2021-Arynox_Hotel_ERP" style={{marginRight:'5px'}}><FontAwesomeIcon icon={faGithub} size='2x' color='white' style={{marginTop:'10px'}}/></a>
                    </div>
         </About>
            <Quick>

@@ -456,7 +456,7 @@ abstract class Controller extends ControllerCore
 				<tr><td>Queries</td><td>'.$this->getNbQueriesColor(count($this->array_queries)).'</td></tr>
 				<tr><td>Memory Peak Usage</td><td>'.$this->getPeakMemoryColor($this->profiler[count($this->profiler) - 1]['peak_memory_usage']).' Mb</td></tr>
 				<tr><td>Included Files</td><td>'.count(get_included_files()).' files - '.$this->getMemoryColor($this->total_filesize).' Mb</td></tr>
-				<tr><td>QloApps Cache</td><td>'.$this->getMemoryColor($this->total_cache_size).' Mb</td></tr>
+				<tr><td>Arynox_Hotel_ERP Cache</td><td>'.$this->getMemoryColor($this->total_cache_size).' Mb</td></tr>
 				<tr><td><a href="javascript:void(0);" onclick="$(\'.global_vars_detail\').toggle();">Global vars</a></td><td>'.$this->getMemoryColor($this->total_global_var_size).' Mb</td></tr>';
         foreach ($this->global_var_size as $global => $size) {
             echo '<tr class="global_vars_detail" style="display:none"><td>- global $'.$global.'</td><td>'.$size.'k</td></tr>';
@@ -471,7 +471,7 @@ abstract class Controller extends ControllerCore
         echo '
 		<div class="col-4">
 			<table class="table table-condensed">
-				<tr><td>QloApps Version</td><td>'._QLOAPPS_VERSION_.'</td></tr>
+				<tr><td>Arynox_Hotel_ERP Version</td><td>'._ARYNOX_HOTEL_ERP_VERSION_.'</td></tr>
 				<tr><td>PHP Version</td><td>'.$this->getPhpVersionColor(phpversion()).'</td></tr>
 				<tr><td>MySQL Version</td><td>'.$this->getMySQLVersionColor(Db::getInstance()->getVersion()).'</td></tr>
 				<tr><td>Memory Limit</td><td>'.ini_get('memory_limit').'</td></tr>

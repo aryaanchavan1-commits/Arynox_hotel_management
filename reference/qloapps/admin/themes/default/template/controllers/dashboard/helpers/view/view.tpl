@@ -128,19 +128,19 @@
                     <section class="dash_links widget panel">
                         <h3><i class="icon-link"></i> {l s="Help Center"}</h3>
                             <dl>
-                                <dt><a href="https://docs.qloapps.com/" class="_blank">{l s="Official Documentation"}</a></dt>
-                                <dd>{l s="QloApps User Guide"}</dd>
+                                <dt><a href="https://docs.arynoxhotelerp.com/" class="_blank">{l s="Official Documentation"}</a></dt>
+                                <dd>{l s="Arynox_Hotel_ERP User Guide"}</dd>
                             </dl>
                             <dl>
-                                <dt><a href="https://forums.qloapps.com/" class="_blank">{l s="QloApps Forum"}</a></dt>
-                                <dd>{l s="Connect with the QloApps community"}</dd>
+                                <dt><a href="https://forums.arynoxhotelerp.com/" class="_blank">{l s="Arynox_Hotel_ERP Forum"}</a></dt>
+                                <dd>{l s="Connect with the Arynox_Hotel_ERP community"}</dd>
                             </dl>
                             <dl>
-                                <dt><a href="https://qloapps.com/addons/" class="_blank">{l s="QloApps Addons"}</a></dt>
-                                <dd>{l s="Enhance your store QloApps modules"}</dd>
+                                <dt><a href="https://arynoxhotelerp.com/addons/" class="_blank">{l s="Arynox_Hotel_ERP Addons"}</a></dt>
+                                <dd>{l s="Enhance your store Arynox_Hotel_ERP modules"}</dd>
                             </dl>
                             <dl>
-                                <dt><a href="https://qloapps.com/contact/" class="_blank">{l s="Contact Us!"}</a></dt>
+                                <dt><a href="https://arynoxhotelerp.com/contact/" class="_blank">{l s="Contact Us!"}</a></dt>
                                 <dd>{l s="Contact us for any help"}</dd>
                             </dl>
                     </section>

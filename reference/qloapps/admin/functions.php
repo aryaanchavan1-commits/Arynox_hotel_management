@@ -100,7 +100,7 @@ function rewriteSettingsFile($base_urls = null, $theme = null, $array_db = null)
     $defines['_PS_CREATION_DATE_'] = addslashes(_PS_CREATION_DATE_);
 
     $defines['_PS_VERSION_'] = addslashes(_PS_VERSION_);
-    $defines['_QLOAPPS_VERSION_'] = addslashes(_QLOAPPS_VERSION_);
+    $defines['_ARYNOX_HOTEL_ERP_VERSION_'] = addslashes(_ARYNOX_HOTEL_ERP_VERSION_);
     $content = "<?php\n\n";
     foreach ($defines as $k => $value) {
         if ($k == '_PS_VERSION_') {

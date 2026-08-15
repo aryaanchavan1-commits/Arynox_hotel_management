@@ -24,7 +24,7 @@
 
 ## Improved/Changed Features:
 
-* [CO] : Module is made compatible with QloApps.
+* [CO] : Module is made compatible with Arynox_Hotel_ERP.
 
 _____________________________________________________________________________________________________
 

@@ -9,7 +9,7 @@
  * https://opensource.org/licenses/afl-3.0.php
  * If you did not receive a copy of the license and are unable to
  * obtain it through the world-wide-web, please send an email
- * to support@qloapps.com so we can send you a copy immediately.
+ * to support@arynoxhotelerp.com so we can send you a copy immediately.
  *
  * DISCLAIMER
  *
@@ -42,11 +42,11 @@ class QloDuitkuPayment extends PaymentModule
         $this->bootstrap = true;
         $this->ps_versions_compliancy = array('min' => '1.6', 'max' => _PS_VERSION_);
         $this->payment_type = OrderPayment::PAYMENT_TYPE_ONLINE;
-        $this->qloapps_versions_compliancy = array('min' => '1.4', 'max' => _QLOAPPS_VERSION_);
+        $this->qloapps_versions_compliancy = array('min' => '1.4', 'max' => _ARYNOX_HOTEL_ERP_VERSION_);
 
         parent::__construct();
 
-        $this->displayName = $this->l('QloApps Duitku Payment');
+        $this->displayName = $this->l('Arynox_Hotel_ERP Duitku Payment');
         $this->description = $this->l('This module allows guests to pay using Duitku payment gateway.');
         $this->confirmUninstall = $this->l('Are you sure you want to uninstall?');
         $this->setLogger();

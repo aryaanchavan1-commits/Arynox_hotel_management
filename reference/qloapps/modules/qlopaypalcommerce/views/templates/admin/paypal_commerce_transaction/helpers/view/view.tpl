@@ -7,7 +7,7 @@
 * https://opensource.org/license/osl-3-0-php
 * If you did not receive a copy of the license and are unable to
 * obtain it through the world-wide-web, please send an email
-* to support@qloapps.com so we can send you a copy immediately.
+* to support@arynoxhotelerp.com so we can send you a copy immediately.
 *
 * DISCLAIMER
 *
@@ -56,7 +56,7 @@
                         <td class="col-sm-10">{$transaction_data.pp_paid_total_formated|escape:'html':'UTF-8'}</td>
                     </tr>
                     <tr class="row">
-                        <th class="col-sm-2"><strong>{l s='QloApps Order Reference' mod='qlopaypalcommerce'}</strong></th>
+                        <th class="col-sm-2"><strong>{l s='Arynox_Hotel_ERP Order Reference' mod='qlopaypalcommerce'}</strong></th>
                         <td class="col-sm-10">
                             {$transaction_data.order_reference|escape:'html':'UTF-8'}
                         </td>

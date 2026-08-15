@@ -8,7 +8,7 @@
 * https://opensource.org/license/osl-3-0-php
 * If you did not receive a copy of the license and are unable to
 * obtain it through the world-wide-web, please send an email
-* to support@qloapps.com so we can send you a copy immediately.
+* to support@arynoxhotelerp.com so we can send you a copy immediately.
 *
 * DISCLAIMER
 *
@@ -69,7 +69,7 @@ class AdminModulesCatalogControllerCore extends AdminController
                 $minVersion = isset($suggestedModule->compatibility['from']) ? $suggestedModule->compatibility['from'] : null;
                 $maxVersion = isset($suggestedModule->compatibility['to']) ? $suggestedModule->compatibility['to'] : null;
 
-                if (($minVersion && version_compare(_QLOAPPS_VERSION_, $minVersion, '<')) || ($maxVersion && version_compare(_QLOAPPS_VERSION_, $maxVersion, '>'))) {
+                if (($minVersion && version_compare(_ARYNOX_HOTEL_ERP_VERSION_, $minVersion, '<')) || ($maxVersion && version_compare(_ARYNOX_HOTEL_ERP_VERSION_, $maxVersion, '>'))) {
                     continue;
                 }
             }
@@ -243,7 +243,7 @@ class AdminModulesCatalogControllerCore extends AdminController
     {
         parent::initToolbar();
         $this->page_header_toolbar_btn['addons'] = array(
-            'href' => 'https://qloapps.com/addons/',
+            'href' => 'https://arynoxhotelerp.com/addons/',
             'desc' => $this->l('Explore all Addons'),
             'imgclass' => 'puzzle-piece',
             'target' => true

@@ -8,7 +8,7 @@
 * https://opensource.org/license/osl-3-0-php
 * If you did not receive a copy of the license and are unable to
 * obtain it through the world-wide-web, please send an email
-* to support@qloapps.com so we can send you a copy immediately.
+* to support@arynoxhotelerp.com so we can send you a copy immediately.
 *
 * DISCLAIMER
 *
@@ -47,7 +47,7 @@ class AdminPaypalCommerceTransactionController extends ModuleAdminController
                 'title' => $this->l('Order Reference'),
                 'align' => 'center',
                 'havingFilter' => true,
-                'hint' => $this->l('Order reference in QloApps of the PayPal transaction'),
+                'hint' => $this->l('Order reference in Arynox_Hotel_ERP of the PayPal transaction'),
             ),
             'pp_transaction_id' => array(
                 'title' => $this->l('PayPal Transaction ID'),
@@ -71,7 +71,7 @@ class AdminPaypalCommerceTransactionController extends ModuleAdminController
                 'callback' => 'getCustomerInfo',
                 'havingFilter' => true,
                 'filter_key' => 'customer_name',
-                'hint' => $this->l('Customer in the QloApps who did PayPal transaction.'),
+                'hint' => $this->l('Customer in the Arynox_Hotel_ERP who did PayPal transaction.'),
             ),
             'pp_payment_status' => array(
                 'title' => $this->l('Status'),

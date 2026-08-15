@@ -8,7 +8,7 @@
 * https://opensource.org/license/osl-3-0-php
 * If you did not receive a copy of the license and are unable to
 * obtain it through the world-wide-web, please send an email
-* to support@qloapps.com so we can send you a copy immediately.
+* to support@arynoxhotelerp.com so we can send you a copy immediately.
 *
 * DISCLAIMER
 *
@@ -42,7 +42,7 @@ class QloHotelReview extends Module
         parent::__construct();
 
         $this->secure_key = Tools::encrypt($this->name);
-        $this->displayName = $this->l('QloApps Hotel Reviews');
+        $this->displayName = $this->l('Arynox_Hotel_ERP Hotel Reviews');
         $this->description = $this->l('This module allows guests to review hotels on specific categories.');
         $this->confirmUninstall = $this->l('Are you sure you want to uninstall?');
     }

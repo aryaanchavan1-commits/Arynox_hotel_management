@@ -66,7 +66,7 @@
 </div>
 <div class="alert bg-info">
 	<div class="row modules-addons-info">
-		<h4>{l s='Explore all QloApps addons'} <a class="btn btn-default _blank" href="https://qloapps.com/addons/"> {l s='QloApps addons'}</a></h4>
+		<h4>{l s='Explore all Arynox_Hotel_ERP addons'} <a class="btn btn-default _blank" href="https://arynoxhotelerp.com/addons/"> {l s='Arynox_Hotel_ERP addons'}</a></h4>
 	</div>
 </div>
 

@@ -285,7 +285,7 @@ class AdminDashboardControllerCore extends AdminController
             //'translations' => $translations,
             'action' => self::$currentIndex.'&token='.$this->token,
             'warning' => $this->getWarningDomainName(),
-            'new_version_url' => Tools::getCurrentUrlProtocolPrefix()._QLO_API_DOMAIN_.'/index.php?version='._QLOAPPS_VERSION_.'&lang='.$this->context->language->iso_code.'&method=check-version&autoupgrade='.(int)(Module::isInstalled('qloautoupgrade') && Module::isEnabled('qloautoupgrade')).'&hosted_mode='.(int)defined('_PS_HOST_MODE_'),
+            'new_version_url' => Tools::getCurrentUrlProtocolPrefix()._QLO_API_DOMAIN_.'/index.php?version='._ARYNOX_HOTEL_ERP_VERSION_.'&lang='.$this->context->language->iso_code.'&method=check-version&autoupgrade='.(int)(Module::isInstalled('qloautoupgrade') && Module::isEnabled('qloautoupgrade')).'&hosted_mode='.(int)defined('_PS_HOST_MODE_'),
             'dashboard_use_push' => Configuration::get('PS_DASHBOARD_USE_PUSH'),
             'calendar' => $calendar_helper->generate(),
             'PS_DASHBOARD_SIMULATION' => Configuration::get('PS_DASHBOARD_SIMULATION'),

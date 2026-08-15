@@ -1363,8 +1363,8 @@ class AdminThemesControllerCore extends AdminController
         $fields_value['theme_name'] = $theme->name;
         $fields_value['theme_directory'] = $theme->directory;
         $fields_value['theme_version'] = '1.0';
-        $fields_value['compa_from'] = _QLOAPPS_VERSION_;
-        $fields_value['compa_to'] = _QLOAPPS_VERSION_;
+        $fields_value['compa_from'] = _ARYNOX_HOTEL_ERP_VERSION_;
+        $fields_value['compa_to'] = _ARYNOX_HOTEL_ERP_VERSION_;
         $fields_value['id_theme_export'] = Tools::getValue('id_theme_export');
         $fields_value['documentationName'] = $this->l('documentation');
 
@@ -1989,7 +1989,7 @@ class AdminThemesControllerCore extends AdminController
             }
         }
         if ($xml_version_too_old && !$this->_checkConfigForFeatures(array_keys(AdminThemes::$check_features))) {
-            $this->errors[] = Tools::displayError('The config.xml file has not been created for this version of QloApps.');
+            $this->errors[] = Tools::displayError('The config.xml file has not been created for this version of Arynox_Hotel_ERP.');
             $return = false;
         }
 
@@ -2063,7 +2063,7 @@ class AdminThemesControllerCore extends AdminController
     {
         $protocols = array('https://', 'http://');
         foreach ($protocols as $protocol) {
-            if($xml = @simplexml_load_string(Tools::file_get_contents($protocol._QLO_API_DOMAIN_.'/xml/'.str_replace('.', '', _QLOAPPS_VERSION_).'.xml'))) {
+            if($xml = @simplexml_load_string(Tools::file_get_contents($protocol._QLO_API_DOMAIN_.'/xml/'.str_replace('.', '', _ARYNOX_HOTEL_ERP_VERSION_).'.xml'))) {
                 break;
             }
         }

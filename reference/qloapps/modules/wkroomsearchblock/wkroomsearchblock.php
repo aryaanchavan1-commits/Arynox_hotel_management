@@ -8,7 +8,7 @@
 * https://opensource.org/license/osl-3-0-php
 * If you did not receive a copy of the license and are unable to
 * obtain it through the world-wide-web, please send an email
-* to support@qloapps.com so we can send you a copy immediately.
+* to support@arynoxhotelerp.com so we can send you a copy immediately.
 *
 * DISCLAIMER
 *
@@ -41,7 +41,7 @@ class WkRoomSearchBlock extends Module
         $this->bootstrap = true;
         parent::__construct();
 
-        $this->displayName = $this->l('QloApps Room Search Panels');
+        $this->displayName = $this->l('Arynox_Hotel_ERP Room Search Panels');
         $this->description = $this->l('Room search blocks on different pages to search rooms as per user travel parameters.');
         $this->ps_versions_compliancy = array('min' => '1.6', 'max' => _PS_VERSION_);
     }

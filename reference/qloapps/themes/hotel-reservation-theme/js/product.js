@@ -1033,11 +1033,11 @@ $(document).ready(function() {
         BookingForm.init();
     }
 
-    $(document).on('QloApps:updateRoomOccupancy', function(e) {
+    $(document).on('Arynox_Hotel_ERP:updateRoomOccupancy', function(e) {
         BookingForm.refresh();
     });
 
-    $(document).on('QloApps:updateRoomQuantity', function(e) {
+    $(document).on('Arynox_Hotel_ERP:updateRoomQuantity', function(e) {
         BookingForm.refresh();
     });
 
@@ -1396,7 +1396,7 @@ var BookingForm = {
             disableRoomTypeDemands(0);
             disableRoomTypeServices(0);
         }
-        $(document).trigger("QloApps:afterBookingFormInit");
+        $(document).trigger("Arynox_Hotel_ERP:afterBookingFormInit");
     },
     initDatepicker: function(max_order_date, min_booking_offset, dateFrom, dateTo) {
         let start_date = new Date();

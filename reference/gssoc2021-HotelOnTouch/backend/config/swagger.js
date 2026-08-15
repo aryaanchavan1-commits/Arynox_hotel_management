@@ -5,7 +5,7 @@ const port = process.env.PORT || 3030;
 const swaggerDefinition = {
     openapi: "3.0.0",
     info: {
-        title: "HotelOnTouch API",
+        title: "Arynox_Hotel_ERP API",
         version: "1.0.0",
     },
     servers: [

@@ -141,7 +141,7 @@
 					{l s='Website information'}
 				</h3>
 				<p>
-					<strong>{l s='QloApps version:'}</strong> {$shop.qloappsV|escape:'html':'UTF-8'}
+					<strong>{l s='Arynox_Hotel_ERP version:'}</strong> {$shop.qloappsV|escape:'html':'UTF-8'}
 				</p>
 				<p>
 					<strong>{l s='Website URL:'}</strong> {$shop.url|escape:'html':'UTF-8'}

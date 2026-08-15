@@ -535,13 +535,13 @@
 						}
 						if (hasErrors == 0) {
 							$(occupancy_wrapper).parent().removeClass('open');
-							$(document).trigger( "QloApps:updateRoomOccupancy", [occupancy_wrapper]);
+							$(document).trigger( "Arynox_Hotel_ERP:updateRoomOccupancy", [occupancy_wrapper]);
 						}
 					}
 				}
 			});
 
-			$(document).on('QloApps:updateRoomOccupancy', function (e, occupancy_wrapper) {
+			$(document).on('Arynox_Hotel_ERP:updateRoomOccupancy', function (e, occupancy_wrapper) {
 				e.preventDefault();
 				let cart_row = $(occupancy_wrapper).closest('tr');
 				let occupancy = getBookingOccupancyDetails(cart_row);

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 const AllContributors = () => {
   const baseUrl =
-    "https://api.github.com/repos/ayan-biswas0412/gssoc2021-HotelOnTouch/contributors";
+    "https://api.github.com/repos/ayan-biswas0412/gssoc2021-Arynox_Hotel_ERP/contributors";
   const [data, setData] = useState([]);
   useEffect(() => {
     const fetchData = async () => {

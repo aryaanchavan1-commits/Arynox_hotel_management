@@ -1,4 +1,4 @@
-# Hotel Management System
+# Arynox_Hotel_ERP
 
 This project was created as a learning exercise during my early days of exploring web programming. It is not intended for commercial use or enterprise-grade deployment. As a result, the code may contain vulnerabilities, as the focus was on simplicity and functionality rather than robustness or security.
 

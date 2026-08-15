@@ -17,7 +17,7 @@
 * [CO] : [#1488] Updated the flow for feature prices, added option to add multiple restrictions in a single feature price for a room type in back-office.
 * [CO] : [#1464] Updated Upgrade for PHP version 8.1 to 8.4 and MYSql 8 compatibility
 * [CO] : [#1412] Added New option to add bed types for a room type in back office.
-* [CO] : [#1399] Added Standard product flow in QloApps
+* [CO] : [#1399] Added Standard product flow in Arynox_Hotel_ERP
 * [CO] : [#1346] Added Feature to create Advanced price rules for multiple room types at once in the back office.
 * [CO] : [#1355] Updated The flow for the max order date and min booking offset.
 * [CO] : [#1528] Updated The Google Maps API endpoints for improved performance and compatibility for the front and back-office.
@@ -27,7 +27,7 @@
 * [CO] : [#1357] Updated Date format in hotel booking demands and removed non required validation from validateCartBookings() function.
 * [CO] : [#1356] Added New column 'planned checkout' in the hotel booking detail.
 * [CO] : [#1347] Updated parameters in hook 'actionRoomReallocateAfter'.
-* [CO] : [#1342] Added occupancy in the functions and their calls in the QloApps core.
+* [CO] : [#1342] Added occupancy in the functions and their calls in the Arynox_Hotel_ERP core.
 
 ------------------------------
 # V1.5.0 to V1.6.0
@@ -77,12 +77,12 @@
 * [CO] : [#871] Updated tax of room type will be applied to auto add services having price added to room price
 * [BO] : [#883] Added 'Save and stay' button on missing pages at back office.
 * [BO] : [#884] Added Accurate page name display in "Visitors online" statistics.
-* [CO] : [#885] Updated address country of demo customer 'pub@qloapps.com' changed to website default country
+* [CO] : [#885] Updated address country of demo customer 'pub@arynoxhotelerp.com' changed to website default country
 * [BO] : [#888] Updated default listing order of rooms on admin book now page to ascending order of room database ID.
 * [BO] : [#889] Fixed new hotel category gets created instead of updating previous one on hotel name update at back office
 * [BO] : [#890] Service products can now be assigned to a room type from room type edit page at back office.
 * [CO] : [#892] Updated use different prefixes for demo room numbers belonging to different room types
-* [CO] : [#895] Fixed overbooking issues in QloApps and added new configurations for overbooking handling
+* [CO] : [#895] Fixed overbooking issues in Arynox_Hotel_ERP and added new configurations for overbooking handling
 * [BO] : [#901] Added upgrade/degrade of rooms while reallocation and also fixed reallocation and swapping issues.
 * [BO] : [#907] Fixed room reallocation process on AdminHotelRoomsBooking controller caused by space in the name of the room.
 * [CO] : [#908] Improved Order Status changes, Refund issues resolved and order and cancellation process improved
@@ -131,7 +131,7 @@
 * [CO] : [#1136] Fixed cancelled room service is visible when same room is added again in order
 * [CO] : [#1140] Updated the hero image and its upload process.
 * [CO] : [#1153] Fixed partial cart rule not creating when using multiple coupons in a single cart
-* [CO] : [#1156] Updated the demo data added to the database for the QloApps on installation.
+* [CO] : [#1156] Updated the demo data added to the database for the Arynox_Hotel_ERP on installation.
 * [CO] : [#1161] Updated id_address_delivery is now set as 0 by default
 * [CO] : [#1162] Fixed hotel permission are not being created for new hotels.
 * [CO] : [#1170] Added date wise breakdown in Availability and rates search API
@@ -145,7 +145,7 @@
 * [CO] : [#1194] Updated optimized dataForFrontSearch function
 * [CO] : [#1195] Added process for smarty template overriding.
 * [CO] : [#1198] Optimized Hotel Room Type Availability and rates search webservice
-* [CO] : [#1200] Updated price Rounding process improved in entire QloApps system
+* [CO] : [#1200] Updated price Rounding process improved in entire Arynox_Hotel_ERP system
 * [CO] : [#1202] Fixed service not visible in booking when service is deleted from catalog after order
 * [CO] : [#1203] Fixed invalid auto-added service prices when multiple rooms are added in cart or service is disabled or removed from catalog.
 * [CO] : [#1217] Added changes in core algo for managing booking for hourly basis
@@ -170,7 +170,7 @@
 * [FO] : [#651] Fix: imgaes index not defined for services on room type page in front office
 * [BO] : [#607] Updated: Service products pop-up modal in admin order view page
 * [FO] : [#649] Fix: Occupancy panel does not close when clicking on add to cart button
-* [CO] : [#622] Added: Primary hotel in QloApps for tax calculation of service products
+* [CO] : [#622] Added: Primary hotel in Arynox_Hotel_ERP for tax calculation of service products
 * [BO] : [#542] Resolved: advance price rules validation issue
 * [BO] : [#644] Change refund rule text from 'Days before cancellation' to 'Days before check-in' at back office
 * [CO] : [#612] Resolved: hotel tagline and short description wrong format
@@ -209,7 +209,7 @@
 * [CO] : [#514] Resolve: Occupancy wise search feature issues
 * [CO] : [#475] Added Feature: Occupancy wise search and booking
 * [CO] : [#500] Improve order refund flow
-* [BO] : [#473] Fix database exception issue on Book Now page at back office when multiple QloApps installations are present on the same domain
+* [BO] : [#473] Fix database exception issue on Book Now page at back office when multiple Arynox_Hotel_ERP installations are present on the same domain
 * [BO] : [#495] Added: missing re-allocation pop-up and improved design in book now page
 * [BO] : [#456] Allow admin to add new links on Hotel Reservation System > Settings page and removed shortcut links of "Our Rooms" and "Testimonial" modules
 * [BO] : [#464] Implement Additional Facilities tab in AdminProductsController instead of using hotelreservationsystem module hook
@@ -254,7 +254,7 @@
 * [FO] : [#619] Show service cost separately from room cost on checkout page
 * [CO] : [#636] Resolved: refund request payment calculation
 * [BO] : [#653] Updated: Additional facilities panel in admin room type page
-* [CO] : [#490] Added "Hotel Availability and Rates search API"  to QloApps
+* [CO] : [#490] Added "Hotel Availability and Rates search API"  to Arynox_Hotel_ERP
 * [CO] : [#650] Added: Feature per day price in extra services
 * [FO] : [#651] Fix: imgaes index not defined for services on room type page in front office
 * [FO] : [#658] Replaced: child with children in occupancy text front-office
@@ -306,7 +306,7 @@
 
 ## Added Features:
 
-[+] CO : [#198] Multiple hooks are added in the different QloApps core files
+[+] CO : [#198] Multiple hooks are added in the different Arynox_Hotel_ERP core files
 
 ## Improved/changed features:
 
@@ -438,7 +438,7 @@ getProductFeaturePricePlanByDateByPriority
 
 ## Bug/Issues Resolved:
 
-[-] BO : Zipcode in demo data is now dynamic for selected country while QloApps installation.
+[-] BO : Zipcode in demo data is now dynamic for selected country while Arynox_Hotel_ERP installation.
 
 
 ## Update Policy
@@ -453,7 +453,7 @@ getProductFeaturePricePlanByDateByPriority
 ## Improved/changed features:
 
 [+] CO : Demo data insertion improved.
-[+] CO : getHotelCartBookingData() improved as used many places in QloApps.
+[+] CO : getHotelCartBookingData() improved as used many places in Arynox_Hotel_ERP.
 
 [+] CO : Call to HotelImage::validateImage() is deprecated.
 [+] CO : Call to Hotelhelper::validImageExt() is deprecated.
@@ -467,7 +467,7 @@ getProductFeaturePricePlanByDateByPriority
 
 ## Bug/Issues Resolved:
 
-[-] CO : Zipcode in demo data is now dynamic for selected country while QloApps installation.
+[-] CO : Zipcode in demo data is now dynamic for selected country while Arynox_Hotel_ERP installation.
 
 
 
@@ -482,7 +482,7 @@ getProductFeaturePricePlanByDateByPriority
 
 ## Added Features:
 
-[+] CO : Demo data will be now populated as per choice while Qloapps installation (populate data or not option).
+[+] CO : Demo data will be now populated as per choice while Arynox_Hotel_ERP installation (populate data or not option).
 
 
 ## Improved/changed features:
@@ -517,7 +517,7 @@ getProductFeaturePricePlanByDateByPriority
 [+] CO : 'htl_features_lang' table added to make Manage Hotel Features controller multilang.
 [+] CO : 'htl_branch_info_lang' table added to make 'Manage Hotels' controller multilang.
 
-[+] CO : HotelHelper::getQloNativeModules() added for module list of Qloapps
+[+] CO : HotelHelper::getQloNativeModules() added for module list of Arynox_Hotel_ERP
 [+] CO : HotelHelper::updateConfigurationLangKeys(), HotelHelper::updateLangTables() added for lang tables management when importing new language from localization
 
 [+] BO : AdminAssignHotelFeatures controller added to Manage Hotel Features.
@@ -541,7 +541,7 @@ getProductFeaturePricePlanByDateByPriority
 
 [-] CO : Resolved :: hotelreservationsystem - Parent:: replaced with parent:: in classes/hotelHotelBranchInformation.php which was creating problems in installation.
 
-[-] CO : Resolved :: hotelreservationsystem:: HotelBookingDetail.php : phone number sent as string '0987654321'from 0987654321. Giving error while installing Qloapps with php7.0.0 .
+[-] CO : Resolved :: hotelreservationsystem:: HotelBookingDetail.php : phone number sent as string '0987654321'from 0987654321. Giving error while installing Arynox_Hotel_ERP with php7.0.0 .
 
 [-] BO : Resolved :: If current date is the last date then data to is change to the next date while Book now from admin.
 

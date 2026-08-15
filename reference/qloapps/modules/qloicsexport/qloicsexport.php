@@ -8,7 +8,7 @@
  * https://opensource.org/licenses/afl-3.0.php
  * If you did not receive a copy of the license and are unable to
  * obtain it through the world-wide-web, please send an email
- * to support@qloapps.com so we can send you a copy immediately.
+ * to support@arynoxhotelerp.com so we can send you a copy immediately.
  *
  * DISCLAIMER
  *
@@ -39,9 +39,9 @@ class QloIcsExport extends PaymentModule
         $this->bootstrap = true;
         $this->secure_key = Tools::encrypt($this->name);
         $this->ps_versions_compliancy = array('min' => '1.6', 'max' => _PS_VERSION_);
-        $this->qloapps_versions_compliancy = array('min' => '1.7.0.0', 'max' => _QLOAPPS_VERSION_);
+        $this->qloapps_versions_compliancy = array('min' => '1.7.0.0', 'max' => _ARYNOX_HOTEL_ERP_VERSION_);
         
-        $this->displayName = 'QloApps Booking iCalendar (.ics) File Export';
+        $this->displayName = 'Arynox_Hotel_ERP Booking iCalendar (.ics) File Export';
         $this->description = $this->l('Using this module, Admin can export bookings iCalendar file in .ics format.');
 
         parent::__construct();

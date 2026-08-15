@@ -27,9 +27,9 @@
 
 	<div class="modal-body">
 		<div class="alert alert-warning">
-			<h3>{l s='Do you want to install this module that could not be verified by QloApps?'}</h3>
+			<h3>{l s='Do you want to install this module that could not be verified by Arynox_Hotel_ERP?'}</h3>
 
-			<p>{l s="This generally happens when the module isn't distributed through our official marketplace, QloApps Addons - or when your server failed to communicate with QloApps Addons."}</p>
+			<p>{l s="This generally happens when the module isn't distributed through our official marketplace, Arynox_Hotel_ERP Addons - or when your server failed to communicate with Arynox_Hotel_ERP Addons."}</p>
 		</div>
 
 		<div class="row">
@@ -59,7 +59,7 @@
 	<div class="modal-footer">
 		<div class="alert alert-info">
 			<p>
-				{l s='Since you may not have downloaded this module from QloApps Addons, we cannot assert that the module is not adding some undisclosed functionalities. We advise you to install it only if you trust the source of the content.'}
+				{l s='Since you may not have downloaded this module from Arynox_Hotel_ERP Addons, we cannot assert that the module is not adding some undisclosed functionalities. We advise you to install it only if you trust the source of the content.'}
 				<a id="untrusted-show-risk" href="#"><strong>{l s="What's the risk?"}</strong></a>
 			</p>
 		</div>
@@ -74,13 +74,13 @@
 
 		<p>{l s="A module that hasn't been verified may be dangerous and could add hidden functionalities like backdoors, ads, hidden links, spam, etc. Don’t worry, this alert is simply a warning."}</p>
 
-		<p>{l s="QloApps, being an open-source software, has an awesome community with a long history of developing and sharing high quality modules. Before installing this module, making sure its author is a known community member is always a good idea (by checking [1]our forum[/1] for instance)." tags=['<a href="https://forums.qloapps.com/">']}</p>
+		<p>{l s="Arynox_Hotel_ERP, being an open-source software, has an awesome community with a long history of developing and sharing high quality modules. Before installing this module, making sure its author is a known community member is always a good idea (by checking [1]our forum[/1] for instance)." tags=['<a href="https://forums.arynoxhotelerp.com/">']}</p>
 
 		<h4>{l s='What Should I Do?'}</h4>
 
 		<p>{l s="If you trust or find the author of this module to be an active community member, you can proceed with the installation."}
 
-		<p>{l s="Otherwise you can look for similar modules on the official marketplace. [1]Click here to browse QloApps Addons[/1]." tags=['<a class="catalog-link" href="https://qloapps.com/addons/" target="_blank">']}
+		<p>{l s="Otherwise you can look for similar modules on the official marketplace. [1]Click here to browse Arynox_Hotel_ERP Addons[/1]." tags=['<a class="catalog-link" href="https://arynoxhotelerp.com/addons/" target="_blank">']}
 
 	</div>
 

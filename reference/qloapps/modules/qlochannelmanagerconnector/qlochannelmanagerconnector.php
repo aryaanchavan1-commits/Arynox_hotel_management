@@ -8,7 +8,7 @@
 * https://opensource.org/license/osl-3-0-php
 * If you did not receive a copy of the license and are unable to
 * obtain it through the world-wide-web, please send an email
-* to support@qloapps.com so we can send you a copy immediately.
+* to support@arynoxhotelerp.com so we can send you a copy immediately.
 *
 * DISCLAIMER
 *
@@ -52,7 +52,7 @@ class QloChannelManagerConnector extends Module
     public function hookDisplayAdminListBefore()
     {
         // This tpl will only display when at least one booking has come from channel manager
-        if ('AdminQloappsChannelManagerConnector' == $this->context->controller->controller_name
+        if ('AdminArynox_Hotel_ERPChannelManagerConnector' == $this->context->controller->controller_name
             && QcmcChannelManagerBooking::getChannelManagerBookings()
         ) {
             return $this->display(__FILE__, 'channel_manager_connection_info.tpl');
@@ -62,7 +62,7 @@ class QloChannelManagerConnector extends Module
     public function hookActionAdminControllerSetMedia()
     {
         // This CSS will only apply when at least one booking has come from channel manager
-        if ('AdminQloappsChannelManagerConnector' == $this->context->controller->controller_name
+        if ('AdminArynox_Hotel_ERPChannelManagerConnector' == $this->context->controller->controller_name
             && QcmcChannelManagerBooking::getChannelManagerBookings()
         ) {
             $this->context->controller->addCSS(_MODULE_DIR_.$this->name.'/views/css/hook/wk_cm_connection_info.css');
@@ -85,7 +85,7 @@ class QloChannelManagerConnector extends Module
 
     public function callInstallTab()
     {
-        $this->installTab('AdminQloappsChannelManagerConnector', 'Channel Manager');
+        $this->installTab('AdminArynox_Hotel_ERPChannelManagerConnector', 'Channel Manager');
 
         return true;
     }

@@ -61,21 +61,21 @@ $(document).ready(function()
 });
 
 function psinstall_twitter_click(message) {
-	window.open('https://twitter.com/intent/tweet?button_hashtag=QloApps&text=' + message, 'sharertwt', 'toolbar=0,status=0,width=640,height=445');
+	window.open('https://twitter.com/intent/tweet?button_hashtag=Arynox_Hotel_ERP&text=' + message, 'sharertwt', 'toolbar=0,status=0,width=640,height=445');
 }
 
 function psinstall_facebook_click() {
-	window.open('http://www.facebook.com/sharer.php?u=http://www.qloapps.com/', 'sharerfacebook', 'toolbar=0,status=0,width=660,height=445');
+	window.open('http://www.facebook.com/sharer.php?u=http://www.arynoxhotelerp.com/', 'sharerfacebook', 'toolbar=0,status=0,width=660,height=445');
 }
 
 function psinstall_google_click() {
-	window.open('https://plus.google.com/share?url=www.qloapps.com/', 'sharergplus', 'toolbar=0,status=0,width=660,height=445');
+	window.open('https://plus.google.com/share?url=www.arynoxhotelerp.com/', 'sharergplus', 'toolbar=0,status=0,width=660,height=445');
 }
 
 function psinstall_pinterest_click() {
-	window.open('http://www.pinterest.com/pin/create/button/?media=http://img-cdn.prestashop.com/logo.png&url=https://qloapps.com/', 'sharerpinterest', 'toolbar=0,status=0,width=660,height=445');
+	window.open('http://www.pinterest.com/pin/create/button/?media=http://img-cdn.prestashop.com/logo.png&url=https://arynoxhotelerp.com/', 'sharerpinterest', 'toolbar=0,status=0,width=660,height=445');
 }
 
 function psinstall_linkedin_click() {
-	window.open('https://www.linkedin.com/shareArticle?title=QloApps&url=www.qloapps.com/download/', 'sharerlinkedin', 'toolbar=0,status=0,width=600,height=450');
+	window.open('https://www.linkedin.com/shareArticle?title=Arynox_Hotel_ERP&url=www.arynoxhotelerp.com/download/', 'sharerlinkedin', 'toolbar=0,status=0,width=600,height=450');
 }

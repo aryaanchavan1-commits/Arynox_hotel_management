@@ -7,7 +7,7 @@
 * https://opensource.org/license/osl-3-0-php
 * If you did not receive a copy of the license and are unable to
 * obtain it through the world-wide-web, please send an email
-* to support@qloapps.com so we can send you a copy immediately.
+* to support@arynoxhotelerp.com so we can send you a copy immediately.
 *
 * DISCLAIMER
 *
@@ -223,7 +223,7 @@ $(document).ready(function(){
             )) {
                 $(occupancy_wrapper).parent().removeClass('open');
                 $(occupancy_wrapper).siblings(".booking_guest_occupancy").removeClass('error_border');
-                $(document).trigger( "QloApps:updateRoomOccupancy", [occupancy_wrapper]);
+                $(document).trigger( "Arynox_Hotel_ERP:updateRoomOccupancy", [occupancy_wrapper]);
             }
         } else {
             $(occupancy_wrapper).siblings(".booking_guest_occupancy").addClass('error_border');
@@ -329,7 +329,7 @@ $(document).ready(function(){
 		}
 		element.val(elementVal);
 		$(this).closest('.rm_qty_cont').find('.qty_count > span').text(elementVal);
-		$(document).trigger( "QloApps:updateRoomQuantity", [element]);
+		$(document).trigger( "Arynox_Hotel_ERP:updateRoomQuantity", [element]);
 	});
 
 	// The button to decrement the product value
@@ -343,7 +343,7 @@ $(document).ready(function(){
 
 		element.val(elementVal);
 		$(this).closest('.rm_qty_cont').find('.qty_count > span').text(elementVal);
-		$(document).trigger( "QloApps:updateRoomQuantity", [element]);
+		$(document).trigger( "Arynox_Hotel_ERP:updateRoomQuantity", [element]);
 	});
 
 	$(document).on('hover', '.add_new_occupancy_btn', function(e) {

@@ -16,7 +16,7 @@
 
 ## Improved/Changed Features:
 
-* [CO] : [#1040] Updated Qloapps cleaner | Added hook for data cleaning in other module and fixed incorrect data being deleted.
+* [CO] : [#1040] Updated Arynox_Hotel_ERP cleaner | Added hook for data cleaning in other module and fixed incorrect data being deleted.
 
 Changelog
 

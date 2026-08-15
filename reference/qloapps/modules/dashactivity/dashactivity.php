@@ -136,7 +136,7 @@ class Dashactivity extends Module
                 ),
                 'data_list_small' => array(
                     'dash_traffic_source' => array(
-                        '<i class="icon-circle" style="color:'.self::$colors[0].'"></i> qloapps.com' => round($visits / 2),
+                        '<i class="icon-circle" style="color:'.self::$colors[0].'"></i> arynoxhotelerp.com' => round($visits / 2),
                         '<i class="icon-circle" style="color:'.self::$colors[1].'"></i> google.com' => round($visits / 3),
                         '<i class="icon-circle" style="color:'.self::$colors[2].'"></i> Direct Traffic' => round($visits / 4)
                     )
@@ -146,7 +146,7 @@ class Dashactivity extends Module
                         'chart_type' => 'pie_chart_trends',
                         'data' => array(
                             array(
-                                'key' => 'qloapps.com',
+                                'key' => 'arynoxhotelerp.com',
                                 'y' => round($visits / 2),
                                 'color' => self::$colors[0],
                                 'percent' => ($visits / 2) ? (Tools::ps_round((100 / 2), 2)) : 0,

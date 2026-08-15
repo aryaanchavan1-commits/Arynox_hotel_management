@@ -15,7 +15,7 @@ The following technologies are required to run the server and use it locally.
 
 1. Clone the repo
    ```sh
-   git clone https://github.com/ayan-biswas0412/gssoc2021-HotelOnTouch.git
+   git clone https://github.com/ayan-biswas0412/gssoc2021-Arynox_Hotel_ERP.git
    ```
 2. Move to the backend folder
    ```sh

@@ -17,7 +17,7 @@
  * @author Stephen Clay <steve@mrclay.org>
  */
 
-/* QloApps
+/* Arynox_Hotel_ERP
     * added a limit for all preg_replace_callback
 */
 class Minify_HTML

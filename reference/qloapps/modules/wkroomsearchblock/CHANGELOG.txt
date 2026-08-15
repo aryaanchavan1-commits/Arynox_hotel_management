@@ -9,7 +9,7 @@
 * [FO] : [#1389] Updated The cart customer guest detail flow.
 * [FO] : [#1410] Fixed The hotel name in the search panel was exceeding the parent container's width In front office.
 * [FO] : [#1406] Fixed Translation issues in the front office
-* [FO] : [#1373] Added Hooks in the new version of QloApps
+* [FO] : [#1373] Added Hooks in the new version of Arynox_Hotel_ERP
 * [FO] : [#1366] Updated The search flow of search result page in the front office.
 * [FO] : [#1355] Updated The flow for the max order date and min booking offset.
 * [FO] : [#1348] Fixed Search panel on landing page in front office does not displays properly if there are any issues in the JS.
@@ -86,7 +86,7 @@
 
 ## Added features
 
-[+] FO : All search panels in the QloApps are integrated in this module now. Search panels will be shown by different hooks.
+[+] FO : All search panels in the Arynox_Hotel_ERP are integrated in this module now. Search panels will be shown by different hooks.
 [+] [CO] : License.txt added.
 [+] [CO] : Readme.md added.
 

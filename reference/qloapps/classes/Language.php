@@ -910,7 +910,7 @@ class LanguageCore extends ObjectModel
         }
 
         if ($version == null) {
-            $version = _QLOAPPS_VERSION_;
+            $version = _ARYNOX_HOTEL_ERP_VERSION_;
         }
 
         $lang_pack = false;

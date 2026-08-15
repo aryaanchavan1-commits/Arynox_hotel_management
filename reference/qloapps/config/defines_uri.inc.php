@@ -84,6 +84,6 @@ define('_MODULE_DIR_',                    __PS_BASE_URI__.'modules/');
 Tools::safeDefine('_PS_API_DOMAIN_',                'api.prestashop.com');
 Tools::safeDefine('_PS_API_URL_',                    'http://'._PS_API_DOMAIN_);
 Tools::safeDefine('_PS_CURRENCY_FEED_URL_',            _PS_API_URL_.'/xml/currencies.xml');
-Tools::safeDefine('_QLO_API_DOMAIN_',                'api.qloapps.com');
+Tools::safeDefine('_QLO_API_DOMAIN_',                'api.arynoxhotelerp.com');
 Tools::safeDefine('_QLO_API_URL_',                    'https://'._QLO_API_DOMAIN_);
 Tools::safeDefine('_QLO_TAB_MODULE_LIST_URL_',        _QLO_API_URL_.'/xml/tab_modules_list.xml');

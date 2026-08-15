@@ -43,7 +43,7 @@ abstract class ModuleCore
     /** @var array filled with known compliant PS versions */
     public $ps_versions_compliancy = array();
 
-    /** @var array filled with known compliant QloApps versions */
+    /** @var array filled with known compliant Arynox_Hotel_ERP versions */
     public $qloapps_versions_compliancy = array();
 
     /** @var array filled with modules needed for install */
@@ -270,13 +270,13 @@ abstract class ModuleCore
             $this->ps_versions_compliancy['max'] .= '.999.999';
         }
 
-        // for QloApps version compliancy
+        // for Arynox_Hotel_ERP version compliancy
         if (isset($this->qloapps_versions_compliancy) && !isset($this->qloapps_versions_compliancy['min'])) {
             $this->qloapps_versions_compliancy['min'] = '0.9.0.0';
         }
 
         if (isset($this->qloapps_versions_compliancy) && !isset($this->qloapps_versions_compliancy['max'])) {
-            $this->qloapps_versions_compliancy['max'] = _QLOAPPS_VERSION_;
+            $this->qloapps_versions_compliancy['max'] = _ARYNOX_HOTEL_ERP_VERSION_;
         }
 
         if (strlen($this->qloapps_versions_compliancy['min']) == 3) {
@@ -362,7 +362,7 @@ abstract class ModuleCore
 
         // Check PS version compliancy
         if (!$this->checkCompliancy()) {
-            $this->_errors[] = Tools::displayError('The version of your module is not compliant with your QloApps version.');
+            $this->_errors[] = Tools::displayError('The version of your module is not compliant with your Arynox_Hotel_ERP version.');
             return false;
         }
 
@@ -447,8 +447,8 @@ abstract class ModuleCore
     {
         if (version_compare(_PS_VERSION_, $this->ps_versions_compliancy['min'], '<')
             || version_compare(_PS_VERSION_, $this->ps_versions_compliancy['max'], '>')
-            || version_compare(_QLOAPPS_VERSION_, $this->qloapps_versions_compliancy['min'], '<')
-            || version_compare(_QLOAPPS_VERSION_, $this->qloapps_versions_compliancy['max'], '>')
+            || version_compare(_ARYNOX_HOTEL_ERP_VERSION_, $this->qloapps_versions_compliancy['min'], '<')
+            || version_compare(_ARYNOX_HOTEL_ERP_VERSION_, $this->qloapps_versions_compliancy['max'], '>')
         ) {
             return false;
         } else {
@@ -1778,7 +1778,7 @@ abstract class ModuleCore
         $status = false;
 
         if (!Tools::isFresh(Module::CACHE_FILE_MODULES_LIST, _TIME_1_DAY_) || $force_reload_cache) {
-            $xml_modules_list = _QLO_API_DOMAIN_.'/xml/'.str_replace('.', '', _QLOAPPS_VERSION_).'.xml';
+            $xml_modules_list = _QLO_API_DOMAIN_.'/xml/'.str_replace('.', '', _ARYNOX_HOTEL_ERP_VERSION_).'.xml';
             if (Tools::refresh(Module::CACHE_FILE_MODULES_LIST, 'https://'.$xml_modules_list)) {
                 $status = 'refresh';
             } elseif (Tools::refresh(Module::CACHE_FILE_MODULES_LIST, 'http://'.$xml_modules_list)) {

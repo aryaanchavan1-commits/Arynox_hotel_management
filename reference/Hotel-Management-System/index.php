@@ -56,7 +56,7 @@ function prepareAndExecute($conn, $sql, $params)
     <section id="auth_section">
         <div class="logo">
             <img class="bluebirdlogo" src="./image/bluebirdlogo.png" alt="logo">
-            <p>BLUEBIRD</p>
+            <p>ARYNOX_HOTEL_ERP</p>
         </div>
         <div class="auth_container">
             <!-- Login -->

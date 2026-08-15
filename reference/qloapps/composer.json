@@ -1,8 +1,8 @@
 {
     "name": "qloapps/qloapps",
-    "description": "QloApps is an Open-source and Free hotel reservation system and booking engine. With the help of QloApps, you can launch your hotel booking website without any cost and take & manage online bookings.",
+    "description": "Arynox_Hotel_ERP is an Open-source and Free hotel reservation system and booking engine. With the help of Arynox_Hotel_ERP, you can launch your hotel booking website without any cost and take & manage online bookings.",
     "type": "project",
-    "homepage": "https://qloapps.com",
+    "homepage": "https://arynoxhotelerp.com",
     "license": "OSL-3.0",
     "keywords": [
         "qloapps",
@@ -16,20 +16,20 @@
     ],
     "authors": [
         {
-            "name": "QloApps",
-            "email": "support@qloapps.com",
-            "homepage": "https://qloapps.com"
+            "name": "Arynox_Hotel_ERP",
+            "email": "support@arynoxhotelerp.com",
+            "homepage": "https://arynoxhotelerp.com"
         },
         {
-            "name": "QloApps Community",
-            "homepage": "https://github.com/Qloapps/QloApps/graphs/contributors"
+            "name": "Arynox_Hotel_ERP Community",
+            "homepage": "https://github.com/Arynox_Hotel_ERP/Arynox_Hotel_ERP/graphs/contributors"
         }
     ],
     "support": {
-        "docs": "https://qloapps.com/docs/",
-        "email": "support@qloapps.com",
-        "forum": "https://forums.qloapps.com/",
-        "source": "https://github.com/Qloapps/QloApps"
+        "docs": "https://arynoxhotelerp.com/docs/",
+        "email": "support@arynoxhotelerp.com",
+        "forum": "https://forums.arynoxhotelerp.com/",
+        "source": "https://github.com/Arynox_Hotel_ERP/Arynox_Hotel_ERP"
     },
     "require": {
         "php": ">8.0 <8.5",

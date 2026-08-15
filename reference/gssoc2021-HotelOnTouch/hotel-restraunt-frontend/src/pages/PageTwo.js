@@ -26,7 +26,7 @@ const PageTwo = () => {
           <p>
             <Button
               variant="primary"
-              href="https://github.com/ayan-biswas0412/gssoc2021-HotelOnTouch"
+              href="https://github.com/ayan-biswas0412/gssoc2021-Arynox_Hotel_ERP"
             >
               Contribue to this Project
             </Button>

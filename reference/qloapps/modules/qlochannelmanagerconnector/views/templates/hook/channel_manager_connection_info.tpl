@@ -7,7 +7,7 @@
 * https://opensource.org/license/osl-3-0-php
 * If you did not receive a copy of the license and are unable to
 * obtain it through the world-wide-web, please send an email
-* to support@qloapps.com so we can send you a copy immediately.
+* to support@arynoxhotelerp.com so we can send you a copy immediately.
 *
 * DISCLAIMER
 *
@@ -29,6 +29,6 @@
     <div class="col-sm-7 channel_connection_info">
         <span class="channel_info_type">{l s='Connection status' mod='qlochannelmanagerconnector'} :</span> <span class="channel_connection_status">{l s='Connected' mod='qlochannelmanagerconnector'}</span>
         <span class="channel_info_type">{l s='Last updated' mod='qlochannelmanagerconnector'} :</span> <span>{$last_booking_datetime|escape:'htmlall':'UTF-8'}</span>
-        <span class="channel_info_type connection_criteria"><i id="connection_details" class="icon-info-circle" data-toggle="popover" data-content="{l s='Connection status with channel manager is showing according to the bookings fetched from QloApps Channel Manager.' mod='qlochannelmanagerconnector'}"></i></span>
+        <span class="channel_info_type connection_criteria"><i id="connection_details" class="icon-info-circle" data-toggle="popover" data-content="{l s='Connection status with channel manager is showing according to the bookings fetched from Arynox_Hotel_ERP Channel Manager.' mod='qlochannelmanagerconnector'}"></i></span>
     </div>
 </div>

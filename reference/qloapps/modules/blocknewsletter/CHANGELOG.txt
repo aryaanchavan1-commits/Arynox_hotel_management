@@ -34,7 +34,7 @@
 
 ## Added features:
 
-- [+]CO : Module is now GDPR complient to Qloapps GDPR module.
+- [+]CO : Module is now GDPR complient to Arynox_Hotel_ERP GDPR module.
 
 
 ## Update Policy

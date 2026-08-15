@@ -1,4 +1,4 @@
-**QloApps Room Search Panels**
+**Arynox_Hotel_ERP Room Search Panels**
 
 # Support:
 Find us our support policy – https://store.webkul.com/support.html/

@@ -8,7 +8,7 @@
 * https://opensource.org/license/osl-3-0-php
 * If you did not receive a copy of the license and are unable to
 * obtain it through the world-wide-web, please send an email
-* to support@qloapps.com so we can send you a copy immediately.
+* to support@arynoxhotelerp.com so we can send you a copy immediately.
 *
 * DISCLAIMER
 *
@@ -603,7 +603,7 @@ class WebserviceSpecificManagementHotelAri extends ObjectModel implements Webser
     private function getResponseXml($ariInfoArray, $dateWiseBreakdown = 0)
     {
         if ($ariInfoArray) {
-            // if date wise breakup is requested the parent node will be 'hotel_aris' as per other APIs in QloApps (orders > order)
+            // if date wise breakup is requested the parent node will be 'hotel_aris' as per other APIs in Arynox_Hotel_ERP (orders > order)
             if ($dateWiseBreakdown) {
                 $this->output .= $this->objOutput->getObjectRender()->renderNodeHeader('hotel_aris', array());
             }
@@ -743,13 +743,13 @@ class WebserviceSpecificManagementHotelAri extends ObjectModel implements Webser
                 $this->output .= $this->objOutput->getObjectRender()->renderNodeFooter('hotel_ari', array());
             }
 
-            // if date wise breakup is requested the parent node will be 'hotel_aris' as per other APIs in QloApps (orders > order)
+            // if date wise breakup is requested the parent node will be 'hotel_aris' as per other APIs in Arynox_Hotel_ERP (orders > order)
             if ($dateWiseBreakdown) {
                 $this->output .= $this->objOutput->getObjectRender()->renderNodeFooter('hotel_aris', array());
             }
         }
 
-        // wrap with the common parent header of QloApps xml api responses
+        // wrap with the common parent header of Arynox_Hotel_ERP xml api responses
         $this->output = $this->objOutput->getObjectRender()->overrideContent($this->output);
 
         return $this->output;
@@ -760,7 +760,7 @@ class WebserviceSpecificManagementHotelAri extends ObjectModel implements Webser
     {
         $ariReponse = [];
         if ($dateWiseBreakdown) {
-            // if date wise breakup is requested the parent node will be 'hotel_aris' as per other APIs in QloApps (orders > order)
+            // if date wise breakup is requested the parent node will be 'hotel_aris' as per other APIs in Arynox_Hotel_ERP (orders > order)
             $ariReponse['hotel_aris'] = array_values($ariInfoArray);
         } else {
             $ariReponse['hotel_ari'] = $ariInfoArray[0];

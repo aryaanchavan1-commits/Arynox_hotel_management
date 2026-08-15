@@ -2617,7 +2617,7 @@ FileETag none
 * https://opensource.org/license/osl-3-0-php
 * If you did not receive a copy of the license and are unable to
 * obtain it through the world-wide-web, please send an email
-* to support@qloapps.com so we can send you a copy immediately.
+* to support@arynoxhotelerp.com so we can send you a copy immediately.
 *
 * DISCLAIMER
 *
@@ -3378,7 +3378,7 @@ exit;
         }
 
         $post_data = http_build_query(array(
-            'version' => isset($params['version']) ? $params['version'] : _QLOAPPS_VERSION_,
+            'version' => isset($params['version']) ? $params['version'] : _ARYNOX_HOTEL_ERP_VERSION_,
             'iso_lang' => Tools::strtolower(isset($params['iso_lang']) ? $params['iso_lang'] : Context::getContext()->language->iso_code),
             'iso_code' => Tools::strtolower(isset($params['iso_country']) ? $params['iso_country'] : Country::getIsoById(Configuration::get('PS_COUNTRY_DEFAULT'))),
             'shop_url' => isset($params['shop_url']) ? $params['shop_url'] : Tools::getShopDomain(),

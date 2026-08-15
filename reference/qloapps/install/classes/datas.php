@@ -109,7 +109,7 @@ class Datas
         'shop_name' => array(
             'name' => 'name',
             'validate' => 'isGenericName',
-            'default' => 'QloApps',
+            'default' => 'Arynox_Hotel_ERP',
         ),
         'shop_activity'    => array(
             'name' => 'activity',
@@ -139,22 +139,22 @@ class Datas
         'admin_email' => array(
             'name' => 'email',
             'validate' => 'isEmail',
-            'default' => 'pub@qloapps.com'
+            'default' => 'pub@arynoxhotelerp.com'
         ),
         'show_license' => array(
             'name' => 'license',
             'default' => 0,
-            'help' => 'Show QloApps license'
+            'help' => 'Show Arynox_Hotel_ERP license'
         ),
         'newsletter' => array(
             'name' => 'newsletter',
             'default' => 1,
-            'help' => 'Get news from QloApps',
+            'help' => 'Get news from Arynox_Hotel_ERP',
         ),
         'enable_ssl' => array(
             'name' => 'ssl',
             'default' => 0,
-            'help' => 'Enable SSL for QloApps',
+            'help' => 'Enable SSL for Arynox_Hotel_ERP',
         ),
     );
 

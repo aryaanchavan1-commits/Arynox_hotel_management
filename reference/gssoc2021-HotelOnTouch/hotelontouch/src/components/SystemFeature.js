@@ -28,12 +28,12 @@ function SystemFeature() {
             <BreakpointProvider>
                 <Breakpoint large up>
                 <div className="typewriter">
-                <h1> Completely Open Sourced Hotel Management System</h1>
+                <h1> Completely Open Sourced Arynox_Hotel_ERP</h1>
                 </div>
                 </Breakpoint>
                 <Breakpoint medium down>
                 <div>
-                <h1> Completely Open Sourced Hotel Management System</h1>
+                <h1> Completely Open Sourced Arynox_Hotel_ERP</h1>
                 </div>
                 </Breakpoint>
             </BreakpointProvider>
