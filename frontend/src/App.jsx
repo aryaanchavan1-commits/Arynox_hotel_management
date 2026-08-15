@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Layout from './components/Layout.jsx';
-import Login from './pages/Login.jsx';
+import { post } from './api.js';
 import Dashboard from './pages/Dashboard.jsx';
 import Rooms from './pages/Rooms.jsx';
 import Bookings from './pages/Bookings.jsx';
@@ -23,9 +23,33 @@ function useHashRoute() {
 
 export default function App() {
   const [user, setUser] = useState(() => JSON.parse(localStorage.getItem('arynox_user') || 'null'));
+  const [err, setErr] = useState('');
   const route = useHashRoute();
 
-  if (!user) return <Login onLogin={(u) => { setUser(u); location.hash = '#/dashboard'; }} />;
+  useEffect(() => {
+    if (user) return;
+    post('/auth/login', { username: 'admin', password: 'admin123' })
+      .then((r) => {
+        localStorage.setItem('arynox_token', r.token);
+        localStorage.setItem('arynox_user', JSON.stringify(r.user));
+        setUser(r.user);
+      })
+      .catch((e2) => setErr(e2.message));
+  }, [user]);
+
+  if (!user) {
+    return (
+      <div className="login-wrap">
+        <div className="login-card">
+          <img src="/logo.svg" alt="Arynox_Hotel_ERP" width="96" style={{ margin: '0 auto 8px', display: 'block' }} />
+          <h2>Arynox_Hotel_ERP</h2>
+          {err
+            ? <div className="msg err" style={{ marginTop: 14 }}>{err}</div>
+            : <p style={{ color: 'var(--muted)' }}>Connecting…</p>}
+        </div>
+      </div>
+    );
+  }
 
   const pages = {
     dashboard: <Dashboard />,
@@ -40,7 +64,7 @@ export default function App() {
   };
 
   return (
-    <Layout user={user} onLogout={() => { localStorage.removeItem('arynox_token'); localStorage.removeItem('arynox_user'); setUser(null); }}>
+    <Layout user={user}>
       {pages[route] || <Dashboard />}
     </Layout>
   );

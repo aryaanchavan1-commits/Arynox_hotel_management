@@ -12,7 +12,7 @@ const NAV = [
   ['settings', '⚙️', 'Settings'],
 ];
 
-export default function Layout({ user, onLogout, children }) {
+export default function Layout({ user, children }) {
   const route = location.hash.replace('#/', '') || 'dashboard';
   return (
     <div className="layout">
@@ -25,7 +25,6 @@ export default function Layout({ user, onLogout, children }) {
         </nav>
         <div className="side-user">
           <div>👤 {user.name} <small>({user.role})</small></div>
-          <button className="btn ghost" onClick={onLogout}>Logout</button>
         </div>
       </aside>
       <main className="content">{children}</main>
