@@ -28,13 +28,27 @@ export default function App() {
 
   useEffect(() => {
     if (user) return;
-    post('/auth/login', { username: 'admin', password: 'admin123' })
-      .then((r) => {
+    let stop = false;
+    let timer;
+    const attempt = async (tries) => {
+      try {
+        const r = await post('/auth/login', { username: 'admin', password: 'admin123' });
+        if (stop) return;
         localStorage.setItem('arynox_token', r.token);
         localStorage.setItem('arynox_user', JSON.stringify(r.user));
         setUser(r.user);
-      })
-      .catch((e2) => setErr(e2.message));
+      } catch (e2) {
+        if (stop) return;
+        if (tries >= 10) {
+          setErr(e2.message || 'Unable to connect to server');
+          return;
+        }
+        setErr('');
+        timer = setTimeout(() => attempt(tries + 1), 8000);
+      }
+    };
+    attempt(1);
+    return () => { stop = true; clearTimeout(timer); };
   }, [user]);
 
   if (!user) {
@@ -44,8 +58,11 @@ export default function App() {
           <img src="/logo.svg" alt="Arynox_Hotel_ERP" width="96" style={{ margin: '0 auto 8px', display: 'block' }} />
           <h2>Arynox_Hotel_ERP</h2>
           {err
-            ? <div className="msg err" style={{ marginTop: 14 }}>{err}</div>
-            : <p style={{ color: 'var(--muted)' }}>Connecting…</p>}
+            ? <div>
+                <div className="msg err" style={{ marginTop: 14 }}>{err}</div>
+                <button className="btn primary" style={{ width: '100%', marginTop: 14 }} onClick={() => window.location.reload()}>Retry</button>
+              </div>
+            : <p style={{ color: 'var(--muted)' }}>Connecting to server…</p>}
         </div>
       </div>
     );
