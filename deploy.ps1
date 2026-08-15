@@ -45,30 +45,44 @@ if (-not $SkipPush) {
 $renderUrl = $envVars["RENDER_URL"]
 if (-not $SkipRender) {
   Write-Host "`n=== Deploying backend to Render ===" -ForegroundColor Cyan
+  $ownerId = (Invoke-RestMethod -Uri "https://api.render.com/v1/owners" -Headers @{ Authorization = "Bearer $renderKey" }).owner.id
+
+  $envVarsList = @(
+    @{ key = "TURSO_DATABASE_URL"; value = $tursoUrl },
+    @{ key = "TURSO_AUTH_TOKEN";   value = $tursoToken },
+    @{ key = "PORT";               value = "10000" }
+  )
+  if ($groqKey) { $envVarsList += @{ key = "GROQ_API_KEY"; value = $groqKey } }
+
   $body = @{
-    type         = "web"
+    type         = "web_service"
     name         = "arynox-hotel-backend"
+    ownerId      = $ownerId
     env          = "node"
     repo         = $repoUrl
     branch       = "main"
     rootDir      = "backend"
-    buildCommand = "npm install"
-    startCommand = "node server.js"
     plan         = "free"
-    envVars      = @(
-      @{ key = "TURSO_DATABASE_URL"; value = $tursoUrl },
-      @{ key = "TURSO_AUTH_TOKEN";   value = $tursoToken },
-      @{ key = "GROQ_API_KEY";       value = $groqKey },
-      @{ key = "PORT";               value = "10000" }
-    )
-  } | ConvertTo-Json -Depth 6
+    envVars      = $envVarsList
+    serviceDetails = @{
+      env = "node"
+      envSpecificDetails = @{ buildCommand = "npm install"; startCommand = "node server.js" }
+      healthCheckPath = "/api/health"
+      numInstances = 1
+      plan = "free"
+      pullRequestPreviewsEnabled = "no"
+      autoDeploy = "yes"
+      openPorts = @(@{ port = 10000; protocol = "HTTP" })
+    }
+  } | ConvertTo-Json -Depth 8
 
   $res = Invoke-RestMethod -Method Post -Uri "https://api.render.com/v1/services" `
     -Headers @{ Authorization = "Bearer $renderKey"; "Content-Type" = "application/json" } `
     -Body $body
-  $renderUrl = $res.serviceDetails.url
+  $svc = Invoke-RestMethod -Uri "https://api.render.com/v1/services" -Headers @{ Authorization = "Bearer $renderKey" }
+  $renderUrl = ($svc | Where-Object { $_.service.name -eq "arynox-hotel-backend" } | Select-Object -First 1).service.serviceDetails.url
   Write-Host "Render service created: $renderUrl" -ForegroundColor Green
-  Write-Host "Backend deploy in progress (takes ~2-5 min). Service ID: $($res.id)"
+  Write-Host "Backend deploy in progress (takes ~2-5 min)."
 } else {
   Write-Host "Skipping Render deploy (SkipRender). RENDER_URL=$renderUrl"
 }

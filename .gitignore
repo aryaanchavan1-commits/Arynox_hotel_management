@@ -18,4 +18,6 @@ Thumbs.db
 
 # logs
 *.log
-npm-debug.log*
+npm-debug.log*run-log.txt
+render-service-id.txt
+backend/run-log.txt
