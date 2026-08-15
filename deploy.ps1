@@ -83,6 +83,20 @@ if (-not $SkipRender) {
   $renderUrl = ($svc | Where-Object { $_.service.name -eq "arynox-hotel-backend" } | Select-Object -First 1).service.serviceDetails.url
   Write-Host "Render service created: $renderUrl" -ForegroundColor Green
   Write-Host "Backend deploy in progress (takes ~2-5 min)."
+
+  # set env vars on the service (PUT replaces the full list)
+  $envVarList = @(
+    @{ key = "TURSO_DATABASE_URL"; value = $tursoUrl },
+    @{ key = "TURSO_AUTH_TOKEN";   value = $tursoToken },
+    @{ key = "PORT";               value = "10000" }
+  )
+  if ($groqKey) { $envVarList += @{ key = "GROQ_API_KEY"; value = $groqKey } }
+  $envJson = $envVarList | ConvertTo-Json -Depth 4
+  $sid = ($svc | Where-Object { $_.service.name -eq "arynox-hotel-backend" } | Select-Object -First 1).service.id
+  Invoke-RestMethod -Method Put -Uri "https://api.render.com/v1/services/$sid/env-vars" `
+    -Headers @{ Authorization = "Bearer $renderKey"; "Content-Type" = "application/json" } `
+    -Body $envJson | Out-Null
+  Write-Host "Env vars set on Render service." -ForegroundColor Green
 } else {
   Write-Host "Skipping Render deploy (SkipRender). RENDER_URL=$renderUrl"
 }
