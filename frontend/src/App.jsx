@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import Layout from './components/Layout.jsx';
 import { post } from './api.js';
-import Dashboard from './pages/Dashboard.jsx';
-import Rooms from './pages/Rooms.jsx';
-import Bookings from './pages/Bookings.jsx';
-import Guests from './pages/Guests.jsx';
-import Restaurant from './pages/Restaurant.jsx';
-import POS from './pages/POS.jsx';
-import Reports from './pages/Reports.jsx';
-import Assistant from './pages/Assistant.jsx';
-import Settings from './pages/Settings.jsx';
+import Dashboard from './views/Dashboard.jsx';
+import Rooms from './views/Rooms.jsx';
+import Bookings from './views/Bookings.jsx';
+import Guests from './views/Guests.jsx';
+import Restaurant from './views/Restaurant.jsx';
+import POS from './views/POS.jsx';
+import Reports from './views/Reports.jsx';
+import Assistant from './views/Assistant.jsx';
+import Settings from './views/Settings.jsx';
 
 function useHashRoute() {
   const [route, setRoute] = useState(() => location.hash.replace('#/', '') || 'dashboard');

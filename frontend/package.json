@@ -1,19 +1,18 @@
 {
   "name": "arynox-hotel-frontend",
-  "version": "1.0.0",
+  "version": "2.0.0",
+  "description": "Arynox_Hotel_ERP - hotel + restaurant + POS + AI (Next.js, single app, API colocated)",
   "private": true,
-  "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "dev": "next dev -p 5173",
+    "build": "next build",
+    "start": "next start -p 5173"
   },
   "dependencies": {
+    "@libsql/client": "^0.14.0",
+    "groq-sdk": "^0.13.0",
+    "next": "^14.2.21",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
-  },
-  "devDependencies": {
-    "@vitejs/plugin-react": "^4.3.4",
-    "vite": "^5.4.11"
   }
 }

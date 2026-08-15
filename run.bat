@@ -4,7 +4,7 @@ cd /d "%~dp0"
 
 echo ============================================================
 echo   ARYNOX HOTEL ERP - Hotel + Restaurant + POS
-echo   Local dev: frontend (Vite) + backend (Express) + offline DB
+echo   Local dev: Next.js app (UI + API) + printer bridge + offline DB
 echo ============================================================
 echo.
 
@@ -35,9 +35,8 @@ if not exist "frontend\node_modules" (
 
 echo [3/3] Starting services...
 
-start "Arynox Backend (port 5000)" cmd /k "cd /d "%~dp0backend" && node server.js"
 start "Arynox Printer Bridge (port 8765)" cmd /k "cd /d "%~dp0backend" && node bridge.js"
-start "Arynox Frontend (port 5173)" cmd /k "cd /d "%~dp0frontend" && npm run dev"
+start "Arynox App (port 5173)" cmd /k "cd /d "%~dp0frontend" && npm run dev"
 
 echo.
 echo Waiting for services to boot...

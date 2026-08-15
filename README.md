@@ -2,6 +2,8 @@
 
 Complete web-based Hotel Management ERP — **Hotel + Restaurant + POS + AI Assistant + Thermal Receipt Printing**, branded **Arynox_Hotel_ERP**.
 
+Built as a **single Next.js application** — the UI and the API live in one codebase and deploy to one Vercel project, so the app loads instantly with no separate server to connect to.
+
 Built on top of 4 reference open-source hotel systems (kept in `reference/` for study):
 - [QloApps](https://github.com/Qloapps/QloApps) — full hotel reservation platform
 - [hotel-mgmt-system](https://github.com/tramyardg/hotel-mgmt-system)
@@ -22,27 +24,27 @@ Built on top of 4 reference open-source hotel systems (kept in `reference/` for 
 ```bat
 run.bat
 ```
-Starts backend (`:5000`), printer bridge (`:8765`) and frontend (`:5173`), opens the browser.
+Starts the Next.js app (`:5173`) and printer bridge (`:8765`), opens the browser.
 
 Login: **admin / admin123** (also `reception / reception123`)
 
 ## 🌐 Deploy
-Everything runs on **Vercel** (serverless) with **Turso** as the database — no separate server to keep alive.
+Everything runs on **Vercel** (serverless) with **Turso** as the database — one project, no separate server to keep alive.
 1. **Turso DB** (online): database URL + token already in `.env`
-2. **Backend → Vercel** (`arynox-hotel-api`) and **Frontend → Vercel** (`arynox-hotel-erp`), one command:
+2. **Deploy the app** (UI + API colocated) in one command:
 ```powershell
 powershell -ExecutionPolicy Bypass -File deploy.ps1
 ```
-(reads `VERCEL_TOKEN` from `.env`, syncs env vars, deploys both projects)
+(reads `VERCEL_TOKEN` from `.env`, syncs env vars, deploys the Next.js project)
 
 Live:
-- Frontend: https://arynox-hotel-erp.vercel.app
-- Backend:  https://arynox-hotel-api.vercel.app/api/health
+- App: https://arynox-hotel-erp.vercel.app
+- Health: https://arynox-hotel-erp.vercel.app/api/health
 
 ### AI Assistant setup
 1. Get a free key: https://console.groq.com → API Keys
 2. Add to `.env`: `GROQ_API_KEY=gsk_...`
-3. Sync it to Vercel: run `deploy.ps1` (or set the env var on the `arynox-hotel-api` project in the Vercel dashboard)
+3. Sync it to Vercel: run `deploy.ps1` (or set the env var on the `arynox-hotel-erp` project in the Vercel dashboard)
 
 ### Thermal receipt printer
 - Printer must be on your LAN with ESC/POS over TCP port **9100** (most network thermal printers)
@@ -50,13 +52,12 @@ Live:
 
 ## 📁 Structure
 ```
-backend/   Express API (serverless on Vercel): auth (JWT), rooms, bookings, guests, menu,
-           orders, POS, reports, receipts (ESC/POS), AI (Groq), printer bridge (local)
-frontend/  React + Vite SPA: Dashboard, Rooms, Bookings, Guests, Restaurant, POS,
-           Reports, AI Assistant
+frontend/  Next.js app (UI + API): src/app (Next routes + /api/[...path] handler),
+           src/views (pages), src/components, src/lib (db, auth, receipt, ai)
+backend/   printer bridge (local, port 8765); legacy Express API superseded by frontend/src/app/api
 reference/ 4 cloned open-source hotel systems
 scripts/   Turso database setup helper, logo + rebrand helpers
-run.bat    local launcher   deploy.ps1  cloud deploy (Vercel frontend + backend)
+run.bat    local launcher   deploy.ps1  cloud deploy (Vercel single project)
 ```
 
 ## 🔐 Security note

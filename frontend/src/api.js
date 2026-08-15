@@ -1,4 +1,4 @@
-const BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const BASE = '';
 
 const token = () => localStorage.getItem('arynox_token') || '';
 
@@ -6,7 +6,7 @@ export async function api(method, path, body) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 25000);
   try {
-    const res = await fetch(BASE + path, {
+    const res = await fetch(BASE + '/api' + path, {
       method,
       headers: {
         'Content-Type': 'application/json',
