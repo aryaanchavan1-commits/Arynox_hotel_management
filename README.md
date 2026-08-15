@@ -27,17 +27,22 @@ Starts backend (`:5000`), printer bridge (`:8765`) and frontend (`:5173`), opens
 Login: **admin / admin123** (also `reception / reception123`)
 
 ## 🌐 Deploy
+Everything runs on **Vercel** (serverless) with **Turso** as the database — no separate server to keep alive.
 1. **Turso DB** (online): database URL + token already in `.env`
-2. **Backend → Render** and **Frontend → Vercel**, one command:
+2. **Backend → Vercel** (`arynox-hotel-api`) and **Frontend → Vercel** (`arynox-hotel-erp`), one command:
 ```powershell
 powershell -ExecutionPolicy Bypass -File deploy.ps1
 ```
-(reads `VERCEL_TOKEN`, `RENDER_API_KEY` from `.env`, pushes to GitHub, creates the Render service, then deploys the frontend pointed at it)
+(reads `VERCEL_TOKEN` from `.env`, syncs env vars, deploys both projects)
+
+Live:
+- Frontend: https://arynox-hotel-erp.vercel.app
+- Backend:  https://arynox-hotel-api.vercel.app/api/health
 
 ### AI Assistant setup
 1. Get a free key: https://console.groq.com → API Keys
 2. Add to `.env`: `GROQ_API_KEY=gsk_...`
-3. Restart backend (locally: rerun `run.bat`; cloud: update env var on Render)
+3. Sync it to Vercel: run `deploy.ps1` (or set the env var on the `arynox-hotel-api` project in the Vercel dashboard)
 
 ### Thermal receipt printer
 - Printer must be on your LAN with ESC/POS over TCP port **9100** (most network thermal printers)
@@ -45,13 +50,13 @@ powershell -ExecutionPolicy Bypass -File deploy.ps1
 
 ## 📁 Structure
 ```
-backend/   Express API: auth, rooms, bookings, guests, menu, orders, POS, reports,
-           receipts (ESC/POS), AI (Groq), printer bridge
+backend/   Express API (serverless on Vercel): auth (JWT), rooms, bookings, guests, menu,
+           orders, POS, reports, receipts (ESC/POS), AI (Groq), printer bridge (local)
 frontend/  React + Vite SPA: Dashboard, Rooms, Bookings, Guests, Restaurant, POS,
            Reports, AI Assistant
 reference/ 4 cloned open-source hotel systems
-scripts/   Turso database setup helper
-run.bat    local launcher   deploy.ps1  cloud deploy (Vercel + Render)
+scripts/   Turso database setup helper, logo + rebrand helpers
+run.bat    local launcher   deploy.ps1  cloud deploy (Vercel frontend + backend)
 ```
 
 ## 🔐 Security note

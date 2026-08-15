@@ -6,7 +6,32 @@ const { chat } = require('./ai');
 const { Groq } = require('groq-sdk');
 
 const router = express.Router();
-const sessions = new Map(); // token -> { userId, username, name, role }
+
+// ---------- stateless auth (HMAC-signed token, serverless-safe) ----------
+const JWT_SECRET = process.env.ARYNOX_JWT_SECRET || 'arynox-local-secret';
+const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64url');
+const b64j = (s) => Buffer.from(s, 'base64url').toString('utf8');
+
+function signToken(payload) {
+  const header = b64({ alg: 'HS256', typ: 'JWT' });
+  const body = b64({ ...payload, exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30 });
+  const sig = crypto.createHmac('sha256', JWT_SECRET).update(header + '.' + body).digest('base64url');
+  return `${header}.${body}.${sig}`;
+}
+
+function verifyToken(token) {
+  if (!token) return null;
+  const parts = token.split('.');
+  if (parts.length !== 3) return null;
+  const [header, body, sig] = parts;
+  const expected = crypto.createHmac('sha256', JWT_SECRET).update(header + '.' + body).digest('base64url');
+  if (expected !== sig) return null;
+  try {
+    const payload = JSON.parse(b64j(body));
+    if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) return null;
+    return payload;
+  } catch { return null; }
+}
 
 function hash(pw, salt) { return crypto.scryptSync(pw, salt, 64).toString('hex'); }
 const SALT = 'arynox';
@@ -19,14 +44,13 @@ router.post('/auth/login', async (req, res) => {
   if (!u || u.password_hash !== hash(password || '', SALT)) {
     return res.status(401).json({ error: 'Invalid username or password' });
   }
-  const token = crypto.randomBytes(24).toString('hex');
-  sessions.set(token, { userId: u.id, username: u.username, name: u.name, role: u.role });
+  const token = signToken({ userId: u.id, username: u.username, name: u.name, role: u.role });
   res.json({ token, user: { name: u.name, role: u.role, username: u.username } });
 });
 
 function auth(req, res, next) {
   const token = (req.headers.authorization || '').replace('Bearer ', '') || req.query.token;
-  const s = sessions.get(token);
+  const s = verifyToken(token);
   if (!s) return res.status(401).json({ error: 'Unauthorized' });
   req.user = s;
   next();
@@ -308,4 +332,4 @@ router.post('/printer/thermal', async (req, res) => {
   setTimeout(() => sock.destroy(), 10000);
 });
 
-module.exports = { router, sessions };
+module.exports = { router };
