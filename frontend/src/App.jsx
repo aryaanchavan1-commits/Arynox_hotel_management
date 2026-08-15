@@ -24,6 +24,7 @@ function useHashRoute() {
 export default function App() {
   const [user, setUser] = useState(() => JSON.parse(localStorage.getItem('arynox_user') || 'null'));
   const [err, setErr] = useState('');
+  const [tries, setTries] = useState(0);
   const route = useHashRoute();
 
   useEffect(() => {
@@ -39,11 +40,12 @@ export default function App() {
         setUser(r.user);
       } catch (e2) {
         if (stop) return;
-        if (tries >= 10) {
+        if (tries >= 6) {
           setErr(e2.message || 'Unable to connect to server');
           return;
         }
         setErr('');
+        setTries(tries);
         timer = setTimeout(() => attempt(tries + 1), 8000);
       }
     };
@@ -62,7 +64,7 @@ export default function App() {
                 <div className="msg err" style={{ marginTop: 14 }}>{err}</div>
                 <button className="btn primary" style={{ width: '100%', marginTop: 14 }} onClick={() => window.location.reload()}>Retry</button>
               </div>
-            : <p style={{ color: 'var(--muted)' }}>Connecting to server…</p>}
+            : <p style={{ color: 'var(--muted)' }}>Connecting to server…{tries > 0 ? ` (attempt ${tries + 1}/6)` : ''}</p>}
         </div>
       </div>
     );
