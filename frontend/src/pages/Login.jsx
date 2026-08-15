@@ -22,7 +22,8 @@ export default function Login({ onLogin }) {
   return (
     <div className="login-wrap">
       <form className="login-card" onSubmit={submit}>
-        <h2>🏨 Arynox_Hotel_ERP</h2>
+        <img src="/logo.svg" alt="Arynox_Hotel_ERP" width="96" style={{ margin: '0 auto 8px', display: 'block' }} />
+        <h2>Arynox_Hotel_ERP</h2>
         <p style={{ color: 'var(--muted)', margin: '4px 0 18px' }}>Hotel · Restaurant · POS · AI</p>
         {err && <div className="msg err">{err}</div>}
         <label>Username</label>
