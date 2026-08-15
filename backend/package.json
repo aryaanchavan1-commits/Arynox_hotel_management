@@ -1,0 +1,17 @@
+{
+  "name": "arynox-hotel-backend",
+  "version": "1.0.0",
+  "description": "Arynox Hotel ERP backend - hotel, restaurant, POS, AI assistant, ESC/POS receipts",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "bridge": "node bridge.js"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.14.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "groq-sdk": "^0.13.0"
+  }
+}
