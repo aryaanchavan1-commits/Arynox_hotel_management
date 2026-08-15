@@ -92,8 +92,8 @@
 - [x] T049 Run existing endpoint regression: health, login, settings, summary, bills, receipts html/escpos, AI chat
 - [x] T050 Verify separation: anonymous/guest visitor cannot reach any `#/staff/*` route or staff API (403); guest token rejected by staff routes
 - [x] T051 Verify mobile: public pages render without horizontal scroll at 375px viewport; booking flow completes on mobile
-- [ ] T052 Build & deploy to Vercel (`vercel deploy --prod --force`), verify live: guest site, signup/login, public booking, staff login, summary, restaurant KOT, housekeeping
-- [ ] T053 Update README, deploy.ps1, run.bat; commit + push
+- [x] T052 Build & deploy to Vercel (`vercel deploy --prod --force`), verify live: guest site, signup/login, public booking, staff login, summary, restaurant KOT, housekeeping
+- [x] T053 Update README, deploy.ps1, run.bat; commit + push
 
 ---
 
