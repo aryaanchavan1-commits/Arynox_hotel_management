@@ -3,11 +3,16 @@ import { BASE } from '../api.js';
 
 export default function ReceiptModal({ bill, onClose }) {
   const [full, setFull] = useState(null);
+  const [settings, setSettings] = useState({ hotel_name: 'Arynox_Hotel_ERP', hotel_address: '', hotel_phone: '' });
   const [printerIp, setPrinterIp] = useState('192.168.1.');
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
+    fetch(`${BASE}/api/settings`, { headers: { Authorization: 'Bearer ' + localStorage.getItem('arynox_token') } })
+      .then((r) => r.json())
+      .then((s) => s && setSettings((old) => ({ ...old, ...s })))
+      .catch(() => {});
     if (bill && bill.items) { setFull(bill); return; }
     if (bill && bill.id) {
       fetch(`${BASE}/api/bills/${bill.id}`, { headers: { Authorization: 'Bearer ' + localStorage.getItem('arynox_token') } })
@@ -55,7 +60,9 @@ export default function ReceiptModal({ bill, onClose }) {
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <h3>🧾 Receipt #{full.id} <span className="badge paid">{full.type} · {full.payment_method.toUpperCase()}</span></h3>
         <div className="receipt-preview">
-          <div className="c"><b>ARYNOX GRAND HOTEL</b></div>
+          <div className="c"><b>{settings.hotel_name || 'Arynox_Hotel_ERP'}</b></div>
+          {settings.hotel_address && <div className="c" style={{ fontSize: 12 }}>{settings.hotel_address}</div>}
+          {settings.hotel_phone && <div className="c" style={{ fontSize: 12 }}>Tel: {settings.hotel_phone}</div>}
           <div className="line2">BILL #{full.id} · {full.created_at?.slice(0, 16)}</div>
           {full.guest_name && <div className="c">Guest: {full.guest_name}</div>}
           {(full.items || []).map((it, i) => (

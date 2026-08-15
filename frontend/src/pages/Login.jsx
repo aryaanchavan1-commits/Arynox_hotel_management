@@ -22,7 +22,7 @@ export default function Login({ onLogin }) {
   return (
     <div className="login-wrap">
       <form className="login-card" onSubmit={submit}>
-        <h2>🏨 Arynox Hotel ERP</h2>
+        <h2>🏨 Arynox_Hotel_ERP</h2>
         <p style={{ color: 'var(--muted)', margin: '4px 0 18px' }}>Hotel · Restaurant · POS · AI</p>
         {err && <div className="msg err">{err}</div>}
         <label>Username</label>

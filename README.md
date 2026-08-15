@@ -1,6 +1,6 @@
-# 🏨 Arynox Hotel ERP
+# 🏨 Arynox_Hotel_ERP
 
-Full web-based Hotel Management ERP — **Hotel + Restaurant + POS + AI Assistant + Thermal Receipt Printing**.
+Complete web-based Hotel Management ERP — **Hotel + Restaurant + POS + AI Assistant + Thermal Receipt Printing**, branded **Arynox_Hotel_ERP**.
 
 Built on top of 4 reference open-source hotel systems (kept in `reference/` for study):
 - [QloApps](https://github.com/Qloapps/QloApps) — full hotel reservation platform
@@ -15,6 +15,7 @@ Built on top of 4 reference open-source hotel systems (kept in `reference/` for 
 - 🧾 **Receipts**: browser print, ESC/POS file download, and direct **thermal LAN printing** (port 9100 via local bridge)
 - 📈 **Reports**: live dashboard, occupancy %, revenue trends, per-room-type occupancy
 - 🤖 **AI Assistant** (Groq, llama-3.3-70b): ask "occupancy today?", "revenue?", "available rooms?", "find guest…" — answers from live data via function calling
+- ⚙️ **Settings**: editable brand name, address, phone and tax rate — printed on every receipt
 - 🗄️ **Database**: offline SQLite file locally (`backend/data/hotel.db`), **Turso (libSQL)** online — same code, auto-switches via env
 
 ## 🚀 Run locally (Windows)

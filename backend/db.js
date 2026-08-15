@@ -113,7 +113,7 @@ async function seed() {
 
   const users = await db.execute('SELECT COUNT(*) AS c FROM users');
   if (Number(users.rows[0].c) === 0) {
-    await db.execute('INSERT INTO users (username, password_hash, name, role) VALUES (?, ?, ?, ?)', ['admin', hash('admin123', salt), 'Arynox Admin', 'admin']);
+    await db.execute('INSERT INTO users (username, password_hash, name, role) VALUES (?, ?, ?, ?)', ['admin', hash('admin123', salt), 'Arynox_Hotel_ERP Admin', 'admin']);
     await db.execute('INSERT INTO users (username, password_hash, name, role) VALUES (?, ?, ?, ?)', ['reception', hash('reception123', salt), 'Reception', 'staff']);
     console.log('[seed] users created (admin/admin123)');
   }
@@ -155,10 +155,14 @@ async function seed() {
     console.log('[seed] restaurant menu created (14 items)');
   }
 
-  await db.execute('INSERT OR IGNORE INTO hotel_settings (key, value) VALUES (?, ?)', ['hotel_name', 'Arynox Grand Hotel']);
-  await db.execute('INSERT OR IGNORE INTO hotel_settings (key, value) VALUES (?, ?)', ['hotel_address', 'Arynox Tech Park, Pune, India']);
-  await db.execute('INSERT OR IGNORE INTO hotel_settings (key, value) VALUES (?, ?)', ['hotel_phone', '+91 98765 43210']);
-  await db.execute('INSERT OR IGNORE INTO hotel_settings (key, value) VALUES (?, ?)', ['tax_rate', '5']);
+  const brand = 'Arynox_Hotel_ERP';
+  const migrateBrand = (key, value) =>
+    `INSERT INTO hotel_settings (key, value) VALUES ('${key}', '${value}')
+     ON CONFLICT(key) DO UPDATE SET value = CASE WHEN hotel_settings.value IN ('Arynox Grand Hotel', 'ARYNOX HOTEL', 'Arynox', 'ARYNOX GRAND HOTEL') THEN '${value}' ELSE hotel_settings.value END`;
+  await db.execute(migrateBrand('hotel_name', brand));
+  await db.execute(migrateBrand('hotel_address', 'Arynox Hotel ERP, Tech Park, Pune, India'));
+  await db.execute(migrateBrand('hotel_phone', '+91 98765 43210'));
+  await db.execute(migrateBrand('tax_rate', '5'));
 }
 
 seed().catch((e) => { console.error('[db] init failed', e); process.exit(1); });

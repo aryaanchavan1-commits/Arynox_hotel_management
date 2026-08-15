@@ -127,7 +127,7 @@ async function runTool(name, args) {
   }
 }
 
-const SYSTEM = `You are "Arynox AI", the smart assistant of a hotel management ERP (hotel + restaurant + POS).
+const SYSTEM = `You are "Arynox_Hotel_ERP AI", the smart assistant of the Arynox_Hotel_ERP system (hotel + restaurant + POS).
 Answer hotel staff questions concisely using the tools when you need live data.
 If you have no answer, say so honestly. Keep answers short and friendly.
 IMPORTANT formatting rules:

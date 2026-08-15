@@ -12,7 +12,7 @@ function buildEscPos(bill, settings) {
 
   raw(ESC, 0x40);                                // init
   raw(ESC, 0x61, 0x01);
-  raw(GS, 0x21, 0x11); line((settings.hotel_name || 'ARYNOX HOTEL').toUpperCase());
+  raw(GS, 0x21, 0x11); line((settings.hotel_name || 'ARYNOX_HOTEL_ERP').toUpperCase());
   raw(GS, 0x21, 0x00);
   line(settings.hotel_address || '');
   line('Tel: ' + (settings.hotel_phone || ''));
@@ -64,7 +64,7 @@ function htmlReceipt(bill, settings) {
   .big{font-size:15px;font-weight:bold}
   @media print{body{width:100%;padding:0}}
 </style></head><body onload="window.print()">
-<h1 class="c">${settings.hotel_name || 'ARYNOX HOTEL'}</h1>
+<h1 class="c">${settings.hotel_name || 'ARYNOX_HOTEL_ERP'}</h1>
 <div class="c">${settings.hotel_address || ''}<br>Tel: ${settings.hotel_phone || ''}</div>
 <div class="line"></div>
 <div>BILL #${bill.id} &nbsp; ${(bill.created_at || '').slice(0, 16)}<br>

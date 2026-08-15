@@ -1,2 +1,2 @@
 [db] using local file (offline: backend/data/hotel.db)
-[server] Arynox Hotel ERP backend running on http://localhost:5000
+[server] Arynox_Hotel_ERP backend running on http://localhost:5000

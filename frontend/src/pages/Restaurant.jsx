@@ -8,10 +8,12 @@ export default function Restaurant() {
   const [sel, setSel] = useState(null);       // selected order id
   const [receipt, setReceipt] = useState(null);
   const [newTable, setNewTable] = useState('T1');
+  const [taxRate, setTaxRate] = useState(5);
 
   const load = () => {
     get('/menu').then(setMenu).catch(() => {});
     get('/orders').then(setOrders).catch(() => {});
+    get('/settings').then((s) => s.tax_rate && setTaxRate(Number(s.tax_rate))).catch(() => {});
   };
   useEffect(load, []);
 
@@ -75,7 +77,7 @@ export default function Restaurant() {
                 ))}
               </div>
               <div className="row2" style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, margin: '10px 0' }}>
-                <span>Total (incl. tax)</span><span>₹{(open.total * 1.05).toFixed(2)}</span>
+                <span>Total (incl. {taxRate}% tax)</span><span>₹{(open.total * (1 + taxRate / 100)).toFixed(2)}</span>
               </div>
               <button className="btn green" style={{ width: '100%' }} onClick={() => pay(open)}>💳 Pay & Print Receipt</button>
             </>

@@ -8,8 +8,12 @@ export default function POS() {
   const [method, setMethod] = useState('cash');
   const [receiptId, setReceiptId] = useState(null);
   const [msg, setMsg] = useState('');
+  const [taxRate, setTaxRate] = useState(5);
 
-  useEffect(() => { get('/menu').then(setMenu).catch(() => {}); }, []);
+  useEffect(() => {
+    get('/menu').then(setMenu).catch(() => {});
+    get('/settings').then((s) => s.tax_rate && setTaxRate(Number(s.tax_rate))).catch(() => {});
+  }, []);
 
   const add = (mi) => {
     setCart((c) => {
@@ -19,6 +23,8 @@ export default function POS() {
   };
   const sub = (name) => setCart((c) => c.map((x) => (x.name === name ? { ...x, qty: x.qty - 1 } : x)).filter((x) => x.qty > 0));
   const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
+  const taxAmt = subtotal * (taxRate / 100);
+  const grand = subtotal + taxAmt;
 
   const charge = async () => {
     if (!cart.length) return;
@@ -73,17 +79,17 @@ export default function POS() {
                 <b>Subtotal</b><b>₹{subtotal.toFixed(2)}</b>
               </div>
               <div className="row" style={{ justifyContent: 'space-between', color: 'var(--muted)' }}>
-                <span>Tax (5%)</span><span>₹{(subtotal * 0.05).toFixed(2)}</span>
+                <span>Tax ({taxRate}%)</span><span>₹{taxAmt.toFixed(2)}</span>
               </div>
               <div className="row" style={{ justifyContent: 'space-between', fontWeight: 700, fontSize: 16 }}>
-                <span>TOTAL</span><span>₹{(subtotal * 1.05).toFixed(2)}</span>
+                <span>TOTAL</span><span>₹{grand.toFixed(2)}</span>
               </div>
               <select value={method} onChange={(e) => setMethod(e.target.value)} style={{ margin: '10px 0' }}>
                 <option value="cash">💵 Cash</option>
                 <option value="card">💳 Card</option>
                 <option value="upi">📱 UPI</option>
               </select>
-              <button className="btn green" style={{ width: '100%', padding: 12 }} onClick={charge}>Charge ₹{(subtotal * 1.05).toFixed(2)}</button>
+              <button className="btn green" style={{ width: '100%', padding: 12 }} onClick={charge}>Charge ₹{grand.toFixed(2)}</button>
             </>
           )}
         </div>

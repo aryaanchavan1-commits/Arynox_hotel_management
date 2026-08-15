@@ -9,6 +9,7 @@ import Restaurant from './pages/Restaurant.jsx';
 import POS from './pages/POS.jsx';
 import Reports from './pages/Reports.jsx';
 import Assistant from './pages/Assistant.jsx';
+import Settings from './pages/Settings.jsx';
 
 function useHashRoute() {
   const [route, setRoute] = useState(() => location.hash.replace('#/', '') || 'dashboard');
@@ -35,6 +36,7 @@ export default function App() {
     pos: <POS />,
     reports: <Reports />,
     assistant: <Assistant />,
+    settings: <Settings />,
   };
 
   return (

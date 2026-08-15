@@ -9,6 +9,7 @@ const NAV = [
   ['pos', '💳', 'POS / Billing'],
   ['reports', '📈', 'Reports'],
   ['assistant', '🤖', 'AI Assistant'],
+  ['settings', '⚙️', 'Settings'],
 ];
 
 export default function Layout({ user, onLogout, children }) {
@@ -16,7 +17,7 @@ export default function Layout({ user, onLogout, children }) {
   return (
     <div className="layout">
       <aside className="sidebar">
-        <div className="brand">🏨 <b>Arynox</b><br /><small>Hotel ERP</small></div>
+        <div className="brand">🏨 <b>Arynox_Hotel_ERP</b></div>
         <nav>
           {NAV.map(([key, icon, label]) => (
             <a key={key} href={`#/${key}`} className={route === key ? 'active' : ''}>{icon} {label}</a>

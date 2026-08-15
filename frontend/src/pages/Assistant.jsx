@@ -11,7 +11,7 @@ const SUGGESTIONS = [
 ];
 
 export default function Assistant() {
-  const [msgs, setMsgs] = useState([{ role: 'ai', text: '👋 Hello! I\'m the Arynox AI assistant. Ask me about occupancy, revenue, rooms, guests or menu — I can query live data.' }]);
+  const [msgs, setMsgs] = useState([{ role: 'ai', text: '👋 Hello! I\'m the Arynox_Hotel_ERP AI assistant. Ask me about occupancy, revenue, rooms, guests or menu — I can query live data.' }]);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const endRef = useRef(null);
