@@ -1,9 +1,23 @@
 import React, { useState, useEffect } from 'react';
+import { get } from '../api.js';
 
 export default function PublicLayout({ guest, onGuestLogout, children }) {
   const route = location.hash.replace('#/', '') || 'home';
   const [open, setOpen] = useState(false);
+  const [brand, setBrand] = useState(null);
   useEffect(() => { setOpen(false); }, [route]);
+
+  useEffect(() => {
+    get('/public/hotels').then((d) => {
+      setBrand(d.settings || {});
+      if (d.settings?.primary_color) {
+        document.documentElement.style.setProperty('--pub-primary', d.settings.primary_color);
+      }
+    }).catch(() => {});
+  }, []);
+
+  const name = brand?.hotel_name || 'Arynox Hotel';
+  const short = name.replace(/_(hotel|hotels?|resort|inn)/gi, '');
 
   const links = [
     ['home', 'Home'],
@@ -15,7 +29,7 @@ export default function PublicLayout({ guest, onGuestLogout, children }) {
   return (
     <div className="public">
       <header className="public-head">
-        <a href="#/" className="public-brand">Arynox <span>Hotel</span></a>
+        <a href="#/" className="public-brand">🏨 {short}</a>
         <nav className={`public-nav${open ? ' open' : ''}`}>
           {links.map(([key, label]) => (
             <a key={key} href={`#/${key}`} className={route === key || (key === 'home' && !['rooms', 'booking', 'contact'].includes(route)) ? 'active' : ''}>{label}</a>
@@ -37,12 +51,14 @@ export default function PublicLayout({ guest, onGuestLogout, children }) {
       </header>
       <main className="public-main">{children}</main>
       <footer className="public-footer">
-        <div className="big">Arynox Hotel</div>
-        <p style={{ marginTop: 6 }}>Arynox Hotel ERP, Tech Park, Pune, India · +91 98765 43210</p>
-        <p style={{ marginTop: 8 }}>
+        <div className="big">🏨 {name}</div>
+        <p style={{ marginTop: 6 }}>{brand?.hotel_address || 'Arynox Hotel ERP, Tech Park, Pune, India'}</p>
+        <p style={{ marginTop: 4 }}>📞 {brand?.hotel_phone || '+91 98765 43210'}{brand?.email ? ` · ✉️ ${brand.email}` : ''}</p>
+        <div style={{ marginTop: 8, display: 'flex', gap: 14, justifyContent: 'center' }}>
           <a className="link" href="#/guest/login">Guest sign in</a> ·{' '}
           <a className="link" href="#/staff/login">Staff sign in</a>
-        </p>
+        </div>
+        <p style={{ marginTop: 8, fontSize: 12, color: '#8b93ad' }}>{brand?.footer_text || `${name}. All rights reserved.`}</p>
       </footer>
     </div>
   );

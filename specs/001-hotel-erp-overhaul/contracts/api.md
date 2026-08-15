@@ -75,11 +75,17 @@ Server-side guard checks: `allowedRoles(route)` — see below.
 - `PUT /api/housekeeping/:id` `{ status, assignee }` → `{ ok }`
 
 ### Public guest site (public)
-- `GET /api/public/hotels` → `{ settings: {hotel_name, address, phone, welcome_message}, roomTypes: [{ id, name, price, capacity, description, amenities, image }] }`
-- `POST /api/public/bookings` `{ room_type_id, check_in, check_out, adults, children, name, phone, email, id_type, id_number, address }` → assigns first free room of that type, creates booking (status pending, source online, reference ARY-XXXXX), links `guest_account_id` if a valid guest token is present, → `{ reference, total, check_in, check_out, room_number, hotel_name }` (409 if none free)
+- `GET /api/public/hotels` → `{ settings: {hotel_name, hotel_address, hotel_phone, email, welcome_message, tagline, about_text, primary_color, currency_symbol, footer_text}, facilities: [{icon,title,text}], gallery: [{emoji,label,color}], social: {facebook,instagram,twitter}, roomTypes: [{ id, name, price, capacity, description, amenities, image }] }`
+- `POST /api/public/bookings` `{ room_type_id, check_in, check_out, adults, children, name, phone, email, id_type, id_number, address }` → assigns first free room of that type, creates booking (status pending, source online, reference ARY-XXXXX), links `guest_account_id` if a valid guest token is present, → `{ reference, total, check_in, check_out, room_number, hotel_name, currency_symbol, bookingId }` (409 if none free)
+
+### Branding
+- Admin: `GET/PUT /api/settings` — manages `hotel_name`, `hotel_address`, `hotel_phone`, `email`, `tax_rate`, `currency_symbol`, `welcome_message`, `tagline`, `primary_color`, `about_text`, `footer_text`, `facilities_json`, `gallery_json`, `social_json`. All public-site copy and colours are read from settings, so any hotel can rebrand with no code change.
+
+### Web-booking notifications
+- `GET /api/reports/web-bookings` (admin/manager/reception) → `{ count, bookings: [{ id, reference, status, total, check_in, check_out, created_at, guest_name, room_number, room_type }] }` — live queue of web bookings (source=online, pending/confirmed), surfaces on the ERP Dashboard with a toast notification on new bookings.
 
 ### Reports (all staff)
-- `GET /api/reports/summary` (extended) → adds `revenueBySource: { room, restaurant, pos }`, `pendingBookings`, `hkDirty`
+- `GET /api/reports/summary` (extended) → adds `newWebBookings` (count of online source, pending/confirmed)
 - `GET /api/reports/daily` (existing)
 - `GET /api/reports/occupancy` (existing)
 

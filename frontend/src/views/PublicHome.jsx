@@ -11,13 +11,21 @@ export default function PublicHome() {
 
   const s = data?.settings || {};
   const types = data?.roomTypes || [];
+  const facilities = data?.facilities || [];
+  const gallery = data?.gallery || [];
+  const social = data?.social || {};
+
+  const scrollTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
 
   return (
     <>
       <section className="public-hero">
-        <h1>Welcome to {s.hotel_name || 'Arynox Hotel'}</h1>
-        <p>{s.welcome_message || 'Experience luxury and comfort'}</p>
-        <a href="#/rooms" className="btn" style={{ background: '#fff', color: '#141a2e', border: 'none' }}>Explore Rooms</a>
+        <h1>{s.welcome_message || `Welcome to ${s.hotel_name || 'Arynox Hotel'}`}</h1>
+        <p className="tag">{s.tagline || 'Stay · Dine · Celebrate'}</p>
+        <div className="hero-actions">
+          <a href="#/rooms" className="btn primary">Explore Rooms</a>
+          <a href="#/booking" className="btn ghost">Book a Stay</a>
+        </div>
       </section>
 
       <form className="public-search" onSubmit={(e) => { e.preventDefault(); location.hash = '#/booking'; }}>
@@ -36,12 +44,12 @@ export default function PublicHome() {
         <button className="btn primary" type="submit">Check availability</button>
       </form>
 
-      <section className="public-section">
+      <section className="public-section" id="rooms">
         <h2>Our Rooms</h2>
         <p className="sub">Comfortable stays for every traveller</p>
         <div className="room-cards">
           {types.map((t) => (
-            <a key={t.id} className="room-card-public" href="#/rooms">
+            <a key={t.id} className="room-card-public" href="#/booking">
               <div className="img">🛏️</div>
               <div className="body">
                 <div className="name">{t.name}</div>
@@ -54,36 +62,43 @@ export default function PublicHome() {
         </div>
       </section>
 
-      <section className="public-section">
+      {s.about_text && (
+        <section className="public-section about">
+          <h2>About {s.hotel_name || 'Us'}</h2>
+          <p className="about-text">{s.about_text}</p>
+        </section>
+      )}
+
+      <section className="public-section" id="facilities">
         <h2>Facilities</h2>
         <p className="sub">Everything you need for a perfect stay</p>
         <div className="facilities">
-          <div className="facility"><div className="icon">🌐</div><h3>Free Wi-Fi</h3><p>High-speed internet in every room</p></div>
-          <div className="facility"><div className="icon">🍽️</div><h3>Restaurant</h3><p>Multi-cuisine restaurant &amp; bar</p></div>
-          <div className="facility"><div className="icon">🏊</div><h3>Swimming Pool</h3><p>Rooftop infinity pool</p></div>
-          <div className="facility"><div className="icon">💼</div><h3>Meeting Rooms</h3><p>Business centre &amp; conference hall</p></div>
-          <div className="facility"><div className="icon">🚗</div><h3>Free Parking</h3><p>Secure on-site parking</p></div>
-          <div className="facility"><div className="icon">🕒</div><h3>24/7 Front Desk</h3><p>Round-the-clock assistance</p></div>
+          {facilities.map((f) => (
+            <div className="facility" key={f.title}><div className="icon">{f.icon}</div><h3>{f.title}</h3><p>{f.text}</p></div>
+          ))}
         </div>
       </section>
 
-      <section className="public-section">
+      <section className="public-section" id="gallery">
         <h2>Gallery</h2>
         <div className="gallery">
-          <div className="tile" style={{ background: 'linear-gradient(135deg,#4f46e5,#7c3aed)' }}>🛏️</div>
-          <div className="tile" style={{ background: 'linear-gradient(135deg,#0ea5e9,#6366f1)' }}>🍽️</div>
-          <div className="tile" style={{ background: 'linear-gradient(135deg,#f59e0b,#ef4444)' }}>🌇</div>
-          <div className="tile" style={{ background: 'linear-gradient(135deg,#10b981,#0ea5e9)' }}>🏊</div>
+          {gallery.map((g) => (
+            <div className="tile" key={g.label} style={{ background: g.color }}>{g.emoji}<span>{g.label}</span></div>
+          ))}
         </div>
       </section>
 
-      <section className="public-section">
+      <section className="public-section" id="contact">
         <h2>Contact &amp; Location</h2>
         <div className="public-form">
           <div style={{ marginBottom: 14 }}>
             <div><b>Address:</b> {s.hotel_address || 'Arynox Hotel ERP, Tech Park, Pune, India'}</div>
             <div style={{ marginTop: 6 }}><b>Phone:</b> {s.hotel_phone || '+91 98765 43210'}</div>
+            {s.email && <div style={{ marginTop: 6 }}><b>Email:</b> {s.email}</div>}
           </div>
+          {Object.entries(social).filter(([, v]) => v).map(([k, v]) => (
+            <a key={k} className="social" href={v} target="_blank" rel="noreferrer">{k}</a>
+          ))}
           <a className="btn primary" href="#/booking">Book a room</a>
         </div>
       </section>

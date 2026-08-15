@@ -20,7 +20,7 @@ export default function PublicConfirm({ confirm, setConfirm }) {
           <div className="between"><b>Room</b><span>{confirm.room_number}</span></div>
           <div className="between"><b>Check-in</b><span>{confirm.check_in}</span></div>
           <div className="between"><b>Check-out</b><span>{confirm.check_out}</span></div>
-          <div className="between"><b>Total</b><b>₹{confirm.total}</b></div>
+          <div className="between"><b>Total</b><b>{confirm.currency_symbol || '₹'}{confirm.total}</b></div>
         </div>
         <a className="btn primary" href="#/" onClick={() => setConfirm(null)}>Back to home</a>{' '}
         <a className="btn" href="#/guest/my-bookings">My Bookings</a>

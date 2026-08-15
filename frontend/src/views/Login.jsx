@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { post } from '../api.js';
+import React, { useState, useEffect } from 'react';
+import { get, post } from '../api.js';
 
 export default function Login({ onLogin }) {
   const [username, setUsername] = useState('');
@@ -7,6 +7,11 @@ export default function Login({ onLogin }) {
   const [remember, setRemember] = useState(true);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [brand, setBrand] = useState(null);
+
+  useEffect(() => {
+    get('/public/hotels').then((d) => setBrand(d?.settings || {})).catch(() => {});
+  }, []);
 
   async function submit(e) {
     e.preventDefault();
@@ -28,12 +33,14 @@ export default function Login({ onLogin }) {
   return (
     <div className="login-wrap">
       <div className="login-card">
-        <img src="/logo.svg" alt="Arynox_Hotel_ERP" width="96" style={{ margin: '0 auto 8px', display: 'block' }} />
-        <h2>Arynox_Hotel_ERP</h2>
+        <div className="login-avatar">🏨</div>
+        <h2>{brand?.hotel_name || 'Arynox_Hotel_ERP'}</h2>
         <p className="login-sub">Staff sign in</p>
-        <form onSubmit={submit}>
-          <input type="text" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} autoFocus />
-          <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
+        <form onSubmit={submit} autoComplete="off">
+          <input type="text" placeholder="Username" value={username}
+            onChange={(e) => setUsername(e.target.value)} autoFocus autoComplete="off" />
+          <input type="password" placeholder="Password" value={password}
+            onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" />
           <label className="login-check">
             <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} /> Stay signed in
           </label>
@@ -42,6 +49,7 @@ export default function Login({ onLogin }) {
             {busy ? 'Signing in…' : 'Sign in'}
           </button>
         </form>
+        <p className="login-hint">Staff accounts: admin, reception, manager, kitchen, restaurant, housekeeping &middot; password: the username + "123"</p>
         <a className="login-alt" href="#/">← Back to website</a>
       </div>
     </div>

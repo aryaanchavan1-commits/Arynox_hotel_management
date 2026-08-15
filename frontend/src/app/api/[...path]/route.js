@@ -53,14 +53,25 @@ async function handle(req, params) {
       ...t,
       amenities: (t.amenities || '').split(',').map((x) => x.trim()).filter(Boolean),
     }));
+    let facilities = []; try { facilities = JSON.parse(s.facilities_json || '[]'); } catch {}
+    let gallery = []; try { gallery = JSON.parse(s.gallery_json || '[]'); } catch {}
+    let social = {}; try { social = JSON.parse(s.social_json || '{}'); } catch {}
     return NextResponse.json({
       settings: {
         hotel_name: s.hotel_name,
         hotel_address: s.hotel_address,
         hotel_phone: s.hotel_phone,
+        email: s.email || '',
         welcome_message: s.welcome_message,
+        tagline: s.tagline || 'Stay · Dine · Celebrate',
+        about_text: s.about_text || '',
+        primary_color: s.primary_color || '#4f46e5',
         currency_symbol: s.currency_symbol || '₹',
+        footer_text: s.footer_text || '',
       },
+      facilities,
+      gallery,
+      social,
       roomTypes: types,
     });
   }
@@ -95,7 +106,9 @@ async function handle(req, params) {
       [guestId, free.id, check_in, check_out, adults || 1, children || 0, 'pending', total, 'room_only', '[]', 'online', ref, guestAccountId]);
     return NextResponse.json({
       reference: ref, total, check_in, check_out, room_number: free.number,
-      hotel_name: (await getSettings()).hotel_name, bookingId: Number(r.lastInsertRowid),
+      hotel_name: (await getSettings()).hotel_name,
+      currency_symbol: (await getSettings()).currency_symbol || '₹',
+      bookingId: Number(r.lastInsertRowid),
     });
   }
   if (path[0] === 'auth' && path[1] === 'login' && method === 'POST') {
@@ -610,13 +623,29 @@ async function handle(req, params) {
       `SELECT type, COALESCE(SUM(total),0) s, COUNT(*) n FROM bills WHERE substr(created_at,1,10)=? GROUP BY type`, [today]
     )).rows.map((r) => ({ type: r.type, revenue: Number(r.s), count: Number(r.n) }));
     const hkPending = (await db.execute("SELECT COUNT(*) c FROM housekeeping_tasks WHERE status != 'done'")).rows[0];
+    const webNew = (await db.execute(
+      "SELECT COUNT(*) c FROM bookings WHERE source='online' AND status IN ('pending','confirmed')")).rows[0];
     return NextResponse.json({
       totalRooms: Number(total.c), occupiedRooms: Number(occupied.c),
       occupancy: Math.round((Number(occupied.c) / Math.max(1, Number(total.c))) * 100),
       revenueToday: Number(rev.s), billsToday: Number(rev.n),
       checkedIn: Number(checkins.c), totalGuests: Number(guests.c), openOrders: Number(openOrders.c),
       pendingBookings: Number(pending.c), hkTasksPending: Number(hkPending.c), revenueByType: byType,
+      newWebBookings: Number(webNew.c),
     });
+  }
+  if (path[0] === 'reports' && path[1] === 'web-bookings' && method === 'GET') {
+    const rows = (await db.execute(
+      `SELECT b.id, b.reference, b.status, b.total, b.check_in, b.check_out, b.created_at,
+              g.name AS guest_name, r.number AS room_number, t.name AS room_type
+       FROM bookings b
+       JOIN guests g ON g.id=b.guest_id
+       LEFT JOIN rooms r ON r.id=b.room_id
+       LEFT JOIN room_types t ON t.id=r.room_type_id
+       WHERE b.source='online' AND b.status IN ('pending','confirmed')
+       ORDER BY b.created_at DESC LIMIT 15`
+    )).rows;
+    return NextResponse.json({ count: rows.length, bookings: rows });
   }
   if (path[0] === 'reports' && path[1] === 'bills' && method === 'GET') {
     const days = Math.min(90, Number(url.searchParams.get('days') || 30));

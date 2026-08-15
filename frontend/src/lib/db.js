@@ -255,14 +255,39 @@ async function seed() {
   const migrateBrand = (key, value) =>
     `INSERT INTO hotel_settings (key, value) VALUES ('${key}', '${value}')
      ON CONFLICT(key) DO UPDATE SET value = CASE WHEN hotel_settings.value IN ('Arynox Grand Hotel', 'ARYNOX HOTEL', 'Arynox', 'ARYNOX GRAND HOTEL') THEN '${value}' ELSE hotel_settings.value END`;
+  const ensureSetting = (key, value) =>
+    `INSERT INTO hotel_settings (key, value) VALUES ('${key}', '${String(value).replace(/'/g, "''")}')
+     ON CONFLICT(key) DO UPDATE SET value=excluded.value`;
   await db.execute(migrateBrand('hotel_name', brand));
   await db.execute(migrateBrand('hotel_address', 'Arynox Hotel ERP, Tech Park, Pune, India'));
   await db.execute(migrateBrand('hotel_phone', '+91 98765 43210'));
   await db.execute(migrateBrand('tax_rate', '5'));
-  await db.execute(`INSERT INTO hotel_settings (key, value) VALUES ('currency_symbol', '₹')
-     ON CONFLICT(key) DO UPDATE SET value=excluded.value`);
-  await db.execute(`INSERT INTO hotel_settings (key, value) VALUES ('welcome_message', 'Experience luxury and comfort at Arynox Hotel')
-     ON CONFLICT(key) DO UPDATE SET value=excluded.value`);
+  await db.execute(ensureSetting('currency_symbol', '₹'));
+  await db.execute(ensureSetting('welcome_message', 'Experience luxury and comfort at Arynox Hotel'));
+  await db.execute(ensureSetting('tagline', 'Stay · Dine · Celebrate'));
+  await db.execute(ensureSetting('primary_color', '#4f46e5'));
+  await db.execute(ensureSetting('about_text', 'Arynox Hotel is a modern boutique destination offering elegant rooms, a multi-cuisine restaurant, and warm hospitality for business and leisure travellers.'));
+  await db.execute(ensureSetting('email', 'reservations@arynoxhotel.com'));
+  await db.execute(ensureSetting('facilities_json', JSON.stringify([
+    { icon: '🌐', title: 'Free Wi-Fi', text: 'High-speed internet in every room' },
+    { icon: '🍽️', title: 'Restaurant', text: 'Multi-cuisine restaurant & bar' },
+    { icon: '🏊', title: 'Swimming Pool', text: 'Rooftop infinity pool' },
+    { icon: '💼', title: 'Meeting Rooms', text: 'Business centre & conference hall' },
+    { icon: '🚗', title: 'Free Parking', text: 'Secure on-site parking' },
+    { icon: '🕒', title: '24/7 Front Desk', text: 'Round-the-clock assistance' },
+  ])));
+  await db.execute(ensureSetting('gallery_json', JSON.stringify([
+    { emoji: '🛏️', label: 'Rooms', color: 'linear-gradient(135deg,#4f46e5,#7c3aed)' },
+    { emoji: '🍽️', label: 'Dining', color: 'linear-gradient(135deg,#0ea5e9,#6366f1)' },
+    { emoji: '🌇', label: 'Views', color: 'linear-gradient(135deg,#f59e0b,#ef4444)' },
+    { emoji: '🏊', label: 'Pool', color: 'linear-gradient(135deg,#10b981,#0ea5e9)' },
+  ])));
+  await db.execute(ensureSetting('social_json', JSON.stringify({
+    facebook: 'https://facebook.com/yourhotel',
+    instagram: 'https://instagram.com/yourhotel',
+    twitter: 'https://twitter.com/yourhotel',
+  })));
+  await db.execute(ensureSetting('footer_text', 'Arynox Hotel. All rights reserved.'));
 }
 
 let ready = false;
