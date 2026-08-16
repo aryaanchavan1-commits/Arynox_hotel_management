@@ -30,6 +30,9 @@ export default function Login({ onLogin }) {
     }
   }
 
+  const backHref = brand?.website_url || '#/';
+  const backProps = backHref.startsWith('http') ? { target: '_blank', rel: 'noreferrer' } : {};
+
   return (
     <div className="login-wrap">
       <div className="login-card">
@@ -50,8 +53,7 @@ export default function Login({ onLogin }) {
           </button>
         </form>
         <p className="login-hint">Staff accounts: admin, reception, manager, kitchen, restaurant, housekeeping &middot; password: the username + "123"</p>
-        const backHref = brand?.website_url || '#/';
-        <a className="login-alt" href={backHref} {...(backHref.startsWith('http') ? { target: '_blank', rel: 'noreferrer' } : {})}>← Back to website</a>
+        <a className="login-alt" href={backHref} {...backProps}>← Back to website</a>
       </div>
     </div>
   );
