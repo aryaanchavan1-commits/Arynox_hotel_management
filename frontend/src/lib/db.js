@@ -295,6 +295,10 @@ async function seed() {
     twitter: 'https://twitter.com/hotellaxmielite',
   })));
   await db.execute(ensureSetting('footer_text', 'Hotel Laxmi Elite. All rights reserved.'));
+  await db.execute(ensureSetting('razorpay_key_id', ''));
+  await db.execute(ensureSetting('razorpay_key_secret', ''));
+  await db.execute(ensureSetting('razorpay_webhook_secret', ''));
+  await db.execute(ensureSetting('api_base_url', ''));
 }
 
 let ready = false;

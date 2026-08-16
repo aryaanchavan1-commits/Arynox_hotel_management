@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ROLE_MODULES } from '../lib/roles.js';
+import { get } from '../api.js';
 
 const NAV = {
   dashboard: ['dashboard', '📊', 'Dashboard'],
@@ -25,10 +26,13 @@ function logout() {
 }
 
 export default function Layout({ user, children }) {
-  const route = (location.hash.replace('#/', '') || 'dashboard').split('/')[0];
+  const route = (location.hash.replace('#/', '') || 'staff/dashboard').split('/')[1] || 'dashboard';
   const [dark, setDark] = useState(() => (localStorage.getItem('arynox_theme') || 'light') === 'dark');
+  const [brand, setBrand] = useState('Hotel Laxmi Elite');
   const mods = ROLE_MODULES[user?.role] || [];
   const items = mods.map((m) => NAV[m]).filter(Boolean);
+
+  useEffect(() => { get('/settings').then((s) => setBrand(s?.hotel_name || 'Hotel Laxmi Elite')).catch(() => {}); }, []);
 
   function toggleDark() {
     const next = !dark;
@@ -36,17 +40,17 @@ export default function Layout({ user, children }) {
     localStorage.setItem('arynox_theme', next ? 'dark' : 'light');
     document.documentElement.setAttribute('data-theme', next ? 'dark' : 'light');
   }
-  React.useEffect(() => {
+  useEffect(() => {
     document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
   }, []);
 
   return (
     <div className="layout">
       <aside className="sidebar">
-        <div className="brand">🏨 <b>Arynox_Hotel_ERP</b></div>
+        <div className="brand">🏨 <b>{brand}</b></div>
         <nav>
           {items.map(([key, icon, label]) => (
-            <a key={key} href={`#/${key}`} className={route === key ? 'active' : ''}>{icon} {label}</a>
+            <a key={key} href={`#/staff/${key}`} className={route === key ? 'active' : ''}>{icon} {label}</a>
           ))}
         </nav>
         <div className="side-user">

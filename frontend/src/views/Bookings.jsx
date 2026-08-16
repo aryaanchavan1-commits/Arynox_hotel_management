@@ -42,7 +42,7 @@ export default function Bookings() {
           : r.filter((x) => x.status === 'available' && String(x.room_type_id) === type);
         if (free[0]) setForm((f) => ({ ...f, room_id: free[0].id, check_in: params.get('ci') || today, check_out: params.get('co') || tomorrow }));
       }).catch(() => {});
-      location.hash = '#/bookings';
+      location.hash = '#/staff/bookings';
     }
   }, []);
 

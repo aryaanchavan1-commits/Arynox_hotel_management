@@ -91,7 +91,8 @@ export default function PublicBooking({ setConfirm }) {
         id_proof_mime: idProof.file ? idProof.file.type : '',
         pay_now: false,
       });
-      if (payNow && r.bookingId) {        const sess = await post('/api/payments/create-order', { booking_id: r.bookingId, currency: 'INR' }).catch(() => null);
+      if (payNow && r.bookingId) {
+        const sess = await post('/payments/create-order', { booking_id: r.bookingId, currency: 'INR' }).catch(() => null);
         if (sess && sess.order_id && window.Razorpay) {
           window.Razorpay.open({
             key: sess.key_id,
@@ -201,9 +202,13 @@ export default function PublicBooking({ setConfirm }) {
             <button className="btn green" style={{ marginTop: 16, width: '100%' }} disabled={submitting}>
               {submitting ? 'Booking…' : `Confirm booking — ${s.currency_symbol || '₹'}${selected.total}`}
             </button>
-            <label className="login-check" style={{ marginTop: 8 }}>
-              <input type="checkbox" checked={payNow} onChange={(e) => setPayNow(e.target.checked)} /> Pay now with card/UPI (Razorpay)
-            </label>
+            {s.payments_enabled ? (
+              <label className="login-check" style={{ marginTop: 8 }}>
+                <input type="checkbox" checked={payNow} onChange={(e) => setPayNow(e.target.checked)} /> Pay now with card/UPI (Razorpay)
+              </label>
+            ) : (
+              <p className="sub" style={{ textAlign: 'center', marginTop: 8, fontSize: 12 }}>You can pay online (card/UPI) once online payments are enabled.</p>
+            )}
             <p className="sub" style={{ textAlign: 'center', marginTop: 10, fontSize: 12 }}>
               {savedGuest ? `Signed in as ${savedGuest.name} — your booking will be linked to your account.` : 'Sign in with your guest account to manage bookings later.'}
             </p>

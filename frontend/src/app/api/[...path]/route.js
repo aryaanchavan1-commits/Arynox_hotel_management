@@ -70,6 +70,8 @@ async function handle(req, params) {
         primary_color: s.primary_color || '#4f46e5',
         currency_symbol: s.currency_symbol || '₹',
         footer_text: s.footer_text || '',
+        api_base_url: s.api_base_url || '',
+        payments_enabled: !!(s.razorpay_key_id && s.razorpay_key_secret),
       },
       facilities,
       gallery,
@@ -161,7 +163,8 @@ async function handle(req, params) {
   // ---------- payments (public: webhook + guest checkout session; Razorpay via HTTPS, no SDK) ----------
   if (path[0] === 'payments' && path[1] === 'webhook' && method === 'POST') {
     try { await ensureReady(); } catch (e) { return NextResponse.json({ error: 'Database unavailable' }, { status: 503 }); }
-    const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
+    const cfg = await getSettings();
+    const secret = cfg.razorpay_webhook_secret || process.env.RAZORPAY_WEBHOOK_SECRET;
     const raw = await req.text();
     if (!secret) return NextResponse.json({ received: true });
     const sig = req.headers.get('x-razorpay-signature') || '';
@@ -170,16 +173,19 @@ async function handle(req, params) {
     let evt;
     try { evt = JSON.parse(raw); } catch { return NextResponse.json({ error: 'bad json' }, { status: 400 }); }
     if (evt.event === 'payment.captured' && evt.payload) {
-      const bid = Number(evt.payload.booking_id);
-      await db.execute("UPDATE bookings SET payment_status='paid', payment_intent_id=? WHERE id=?", [evt.payload.id || 'rp', bid]);
+      const pay = evt.payload.payment?.entity || evt.payload.payment || {};
+      const notes = pay.notes || {};
+      const bid = Number(notes.booking_id || evt.payload.booking_id);
+      if (bid) await db.execute("UPDATE bookings SET payment_status='paid', payment_intent_id=? WHERE id=?", [pay.id || 'rp', bid]);
     }
     return NextResponse.json({ received: true });
   }
   if (path[0] === 'payments' && path[1] === 'create-order' && method === 'POST') {
     try { await ensureReady(); } catch (e) { return NextResponse.json({ error: 'Database unavailable' }, { status: 503 }); }
-    const key = process.env.RAZORPAY_KEY_ID;
-    const secret = process.env.RAZORPAY_KEY_SECRET;
-    if (!key || !secret) return NextResponse.json({ error: 'Payments not configured (set RAZORPAY_KEY_ID/SECRET)' }, { status: 501 });
+    const cfg = await getSettings();
+    const key = cfg.razorpay_key_id || process.env.RAZORPAY_KEY_ID;
+    const secret = cfg.razorpay_key_secret || process.env.RAZORPAY_KEY_SECRET;
+    if (!key || !secret) return NextResponse.json({ error: 'Payments not configured (set RAZORPAY_KEY_ID/SECRET in Admin → Settings)' }, { status: 501 });
     const b = await body(req);
     const { booking_id, currency } = b;
     if (!booking_id) return NextResponse.json({ error: 'booking_id required' }, { status: 400 });

@@ -1,4 +1,11 @@
-const BASE = '';
+const getBase = () => {
+  try {
+    const v = localStorage.getItem('api_base_url') || '';
+    return v.replace(/\/+$/, '');
+  } catch {
+    return '';
+  }
+};
 
 export const TOKEN_KEY = 'arynox_token';
 export const GUEST_TOKEN_KEY = 'arynox_guest_token';
@@ -11,7 +18,7 @@ export async function api(method, path, body, useGuest = false) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 25000);
   try {
-    const res = await fetch(BASE + '/api' + path, {
+    const res = await fetch(getBase() + '/api' + path, {
       method,
       headers: {
         'Content-Type': 'application/json',
@@ -35,4 +42,4 @@ export const get = (p, useGuest) => api('GET', p, undefined, useGuest);
 export const post = (p, b, useGuest) => api('POST', p, b, useGuest);
 export const put = (p, b, useGuest) => api('PUT', p, b, useGuest);
 export const del = (p, useGuest) => api('DELETE', p, undefined, useGuest);
-export { BASE };
+export { getBase };

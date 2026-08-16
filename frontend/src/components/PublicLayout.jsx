@@ -10,6 +10,9 @@ export default function PublicLayout({ guest, onGuestLogout, children }) {
   useEffect(() => {
     get('/public/hotels').then((d) => {
       setBrand(d.settings || {});
+      if (d.settings?.api_base_url) {
+        try { localStorage.setItem('api_base_url', d.settings.api_base_url); } catch {}
+      }
       if (d.settings?.primary_color) {
         document.documentElement.style.setProperty('--pub-primary', d.settings.primary_color);
       }

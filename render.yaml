@@ -1,0 +1,25 @@
+# Render Blueprint — Hotel Laxmi Elite backend
+# Deploy: https://dashboard.render.com/select-repo?type=web&repo=aryaanchavan1-commits/Arynox_hotel_management
+# Requires: a card on file in Render billing (even free plan), then Render will ask for the env values below.
+services:
+  - type: web_service
+    name: arynox-hotel-backend
+    runtime: node
+    repo: https://github.com/aryaanchavan1-commits/Arynox_hotel_management
+    branch: main
+    rootDir: frontend
+    plan: free
+    healthCheckPath: /api/health
+    buildCommand: npm install && npm run build
+    startCommand: npx next start -p ${PORT:-10000}
+    envVars:
+      - key: DB_LOCAL
+        value: "false"
+      - key: TURSO_DATABASE_URL
+        sync: false
+      - key: TURSO_AUTH_TOKEN
+        sync: false
+      - key: ARYNOX_JWT_SECRET
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false

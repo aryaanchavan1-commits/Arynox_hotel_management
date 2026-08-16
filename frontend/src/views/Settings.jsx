@@ -8,9 +8,11 @@ export default function Settings() {
     hotel_name: 'Hotel Laxmi Elite', hotel_address: '', hotel_phone: '', tax_rate: '5',
     email: '', welcome_message: '', tagline: '', primary_color: '#4f46e5',
     about_text: '', footer_text: '', facilities_json: '[]', gallery_json: '[]', social_json: '{}',
+    razorpay_key_id: '', razorpay_key_secret: '', razorpay_webhook_secret: '', api_base_url: '',
   });
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
+  const [showSecrets, setShowSecrets] = useState(false);
 
   useEffect(() => {
     get('/settings').then((s) => {
@@ -38,6 +40,8 @@ export default function Settings() {
     if (!JSON_OK(form.social_json)) return setErr('Social links must be valid JSON.');
     try {
       await put('/settings', form);
+      if (form.api_base_url) { try { localStorage.setItem('api_base_url', form.api_base_url.replace(/\/+$/, '')); } catch {} }
+      else { try { localStorage.removeItem('api_base_url'); } catch {} }
       setMsg('✅ Settings saved — receipts and the public website now use your values.');
     } catch (e2) { setErr(e2.message); }
   };
@@ -130,6 +134,41 @@ export default function Settings() {
           <h3 style={{ marginTop: 22 }}>Website — social links (JSON)</h3>
           <textarea rows="3" className="mono" value={form.social_json} onChange={set('social_json')}
             placeholder='{"facebook":"https://facebook.com/yourhotel","instagram":"https://instagram.com/yourhotel"}' />
+
+          <h3 style={{ marginTop: 22 }}>💳 Payments (Razorpay)</h3>
+          <p style={{ color: 'var(--muted)', margin: '4px 0 14px' }}>
+            Paste your Razorpay keys to let guests pay online when booking. Get them at{' '}
+            <a className="link" href="https://dashboard.razorpay.com/app/keys" target="_blank" rel="noreferrer">dashboard.razorpay.com → Settings → API Keys</a>.
+            Then create a webhook in Razorpay → Settings → Webhooks pointing to:
+          </p>
+          <code className="mono" style={{ fontSize: 12, wordBreak: 'break-all' }}>{`${window.location.origin}/api/payments/webhook`} &nbsp;(events: payment.captured)</code>
+          <div className="form-grid" style={{ marginTop: 12 }}>
+            <div className="full">
+              <label>Razorpay Key ID (public)</label>
+              <input value={form.razorpay_key_id} onChange={set('razorpay_key_id')} placeholder="rzp_live_…" autoComplete="off" />
+            </div>
+            <div className="full">
+              <label>Razorpay Key Secret</label>
+              <input type={showSecrets ? 'text' : 'password'} value={form.razorpay_key_secret} onChange={set('razorpay_key_secret')} placeholder="—" autoComplete="off" />
+            </div>
+            <div className="full">
+              <label>Razorpay Webhook Secret</label>
+              <input type={showSecrets ? 'text' : 'password'} value={form.razorpay_webhook_secret} onChange={set('razorpay_webhook_secret')} placeholder="—" autoComplete="off" />
+            </div>
+            <div className="full">
+              <label>
+                <input type="checkbox" checked={showSecrets} onChange={(e) => setShowSecrets(e.target.checked)} style={{ width: 'auto', marginRight: 6 }} />
+                Show secrets
+              </label>
+            </div>
+          </div>
+          <p style={{ color: 'var(--muted)', fontSize: 12, marginTop: 6 }}>
+            Keys can also be set in the server .env as RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET / RAZORPAY_WEBHOOK_SECRET (settings above win).
+          </p>
+
+          <h3 style={{ marginTop: 22 }}>🖥️ API base URL (optional)</h3>
+          <p style={{ color: 'var(--muted)', margin: '4px 0 8px' }}>If you host the backend separately (e.g. Render), paste its URL here (e.g. <code>https://your-backend.onrender.com</code>). Leave blank to use this site's built-in API.</p>
+          <input value={form.api_base_url} onChange={set('api_base_url')} placeholder="https://your-backend.onrender.com" />
 
           <div className="modal-actions">
             <button className="btn primary">💾 Save settings</button>

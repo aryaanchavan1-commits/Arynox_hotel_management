@@ -59,7 +59,7 @@ export default function Availability() {
             bookings={grid.bookings}
             onCell={(r, day) => {
               const co = new Date(new Date(day).getTime() + 86400000 * 2).toISOString().slice(0, 10);
-              location.hash = `#/bookings?room=${r.id}&ci=${day}&co=${co}`;
+              location.hash = `#/staff/bookings?room=${r.id}&ci=${day}&co=${co}`;
             }}
           />
           <p className="sub" style={{ fontSize: 12, marginTop: 8 }}>Tap a free cell to prefill a booking for that room.</p>
