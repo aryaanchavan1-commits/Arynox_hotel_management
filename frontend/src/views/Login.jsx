@@ -34,7 +34,7 @@ export default function Login({ onLogin }) {
     <div className="login-wrap">
       <div className="login-card">
         <div className="login-avatar">🏨</div>
-        <h2>{brand?.hotel_name || 'Arynox_Hotel_ERP'}</h2>
+        <h2>{brand?.hotel_name || 'Hotel Laxmi Elite'}</h2>
         <p className="login-sub">Staff sign in</p>
         <form onSubmit={submit} autoComplete="off">
           <input type="text" placeholder="Username" value={username}

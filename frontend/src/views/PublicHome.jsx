@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense, lazy } from 'react';
 import { get } from '../api.js';
-import ThreeHero from '../components/ThreeHero.jsx';
+const ThreeHero = lazy(() => import('../components/ThreeHero.jsx'));
 
 export default function PublicHome() {
   const [data, setData] = useState(null);
@@ -21,10 +21,10 @@ export default function PublicHome() {
   return (
     <>
       <section className="public-hero" style={{ position: 'relative', overflow: 'hidden' }}>
-        <ThreeHero color={s.primary_color || '#fff'} />
+        <Suspense fallback={null}><ThreeHero color={s.primary_color || '#fff'} /></Suspense>
         <div className="hero-inner">
-          <h1>{s.welcome_message || `Welcome to ${s.hotel_name || 'Arynox Hotel'}`}</h1>
-          <p className="tag">{s.tagline || 'Stay · Dine · Celebrate'}</p>
+          <h1>{s.welcome_message || `Welcome to ${s.hotel_name || 'Hotel Laxmi Elite'}`}</h1>
+          <p className="tag">{s.tagline || 'Luxury · Dining · Celebration'}</p>
           <div className="hero-actions">
             <a href="#/rooms" className="btn primary">Explore Rooms</a>
             <a href="#/booking" className="btn ghost">Book a Stay</a>

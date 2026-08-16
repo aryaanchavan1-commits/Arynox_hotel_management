@@ -46,6 +46,7 @@ export default function Dashboard() {
     ['#0891b2', 'Available Rooms', s ? s.totalRooms - s.occupiedRooms : '—'],
     ['#7c3aed', 'Pending Bookings', s ? s.pendingBookings : '—'],
     ['#0ea5e9', 'New Web Bookings', s ? s.newWebBookings : '—'],
+    ['#ef4444', 'Unpaid Bookings', s ? s.unpaidBookings : '—'],
     ['#db2777', 'Open Restaurant Orders', s ? s.openOrders : '—'],
     ['#ea580c', 'Housekeeping Tasks', s ? s.hkTasksPending : '—'],
   ];

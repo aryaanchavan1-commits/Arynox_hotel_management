@@ -16,7 +16,7 @@ export default function PublicLayout({ guest, onGuestLogout, children }) {
     }).catch(() => {});
   }, []);
 
-  const name = brand?.hotel_name || 'Arynox Hotel';
+  const name = brand?.hotel_name || 'Hotel';
   const short = name.replace(/_(hotel|hotels?|resort|inn)/gi, '');
 
   const links = [
@@ -29,7 +29,10 @@ export default function PublicLayout({ guest, onGuestLogout, children }) {
   return (
     <div className="public">
       <header className="public-head">
-        <a href="#/" className="public-brand">🏨 {short}</a>
+        <a href="#/" className="public-brand">
+          <img src="/logo.svg" alt={name} className="public-logo" />
+          {short}
+        </a>
         <nav className={`public-nav${open ? ' open' : ''}`}>
           {links.map(([key, label]) => (
             <a key={key} href={`#/${key}`} className={route === key || (key === 'home' && !['rooms', 'booking', 'contact'].includes(route)) ? 'active' : ''}>{label}</a>
@@ -51,8 +54,8 @@ export default function PublicLayout({ guest, onGuestLogout, children }) {
       </header>
       <main className="public-main">{children}</main>
       <footer className="public-footer">
-        <div className="big">🏨 {name}</div>
-        <p style={{ marginTop: 6 }}>{brand?.hotel_address || 'Arynox Hotel ERP, Tech Park, Pune, India'}</p>
+        <div className="big"><img src="/logo.svg" alt={name} className="footer-logo" /> {name}</div>
+        <p style={{ marginTop: 6 }}>{brand?.hotel_address || 'Near Rajwadu Resort, Mumbai-Pune Expressway, Pune, India'}</p>
         <p style={{ marginTop: 4 }}>📞 {brand?.hotel_phone || '+91 98765 43210'}{brand?.email ? ` · ✉️ ${brand.email}` : ''}</p>
         <div style={{ marginTop: 8, display: 'flex', gap: 14, justifyContent: 'center' }}>
           <a className="link" href="#/guest/login">Guest sign in</a> ·{' '}

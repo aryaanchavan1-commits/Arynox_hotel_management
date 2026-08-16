@@ -16,6 +16,7 @@ export default function PublicBooking({ setConfirm }) {
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({ name: '', phone: '', email: '', id_type: 'passport', id_number: '', address: '' });
   const [idProof, setIdProof] = useState({ file: null, preview: null, error: '' });
+  const [payNow, setPayNow] = useState(false);
   const [savedGuest, setSavedGuest] = useState(() => JSON.parse(localStorage.getItem('arynox_guest_user') || 'null'));
 
   useEffect(() => {
@@ -30,6 +31,21 @@ export default function PublicBooking({ setConfirm }) {
       if (t) setSelected(t);
     }
   }, [data]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!payNow) return;
+    if (typeof window !== 'undefined' && !window.Razorpay && !document.getElementById('razorpay-checkout')) {
+      const s = document.createElement('script');
+      s.id = 'razorpay-checkout';
+      s.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      s.async = true;
+      s.onload = () => { if (!cancelled) console.log('[razorpay] loaded'); };
+      document.body.appendChild(s);
+      return () => { cancelled = true; };
+    }
+  }, [payNow]);
+
 
   const s = data?.settings || {};
 
@@ -73,7 +89,23 @@ export default function PublicBooking({ setConfirm }) {
         id_proof_base64: proof || '',
         id_proof_name: idProof.file ? idProof.file.name : '',
         id_proof_mime: idProof.file ? idProof.file.type : '',
+        pay_now: false,
       });
+      if (payNow && r.bookingId) {        const sess = await post('/api/payments/create-order', { booking_id: r.bookingId, currency: 'INR' }).catch(() => null);
+        if (sess && sess.order_id && window.Razorpay) {
+          window.Razorpay.open({
+            key: sess.key_id,
+            order_id: sess.order_id,
+            amount: sess.amount,
+            currency: sess.currency,
+            name: s.hotel_name || 'Hotel',
+            description: `Booking ${r.reference}`,
+            handler: () => { setConfirm({ ...r, payment_status: 'paid' }); location.hash = '#/confirm'; },
+            modal: { onClose: () => { setConfirm({ ...r, payment_status: 'paid' }); location.hash = '#/confirm'; } },
+          });
+          return;
+        }
+      }
       setConfirm(r);
       location.hash = '#/confirm';
     } catch (e2) { setError(e2.message); }
@@ -169,6 +201,9 @@ export default function PublicBooking({ setConfirm }) {
             <button className="btn green" style={{ marginTop: 16, width: '100%' }} disabled={submitting}>
               {submitting ? 'Booking…' : `Confirm booking — ${s.currency_symbol || '₹'}${selected.total}`}
             </button>
+            <label className="login-check" style={{ marginTop: 8 }}>
+              <input type="checkbox" checked={payNow} onChange={(e) => setPayNow(e.target.checked)} /> Pay now with card/UPI (Razorpay)
+            </label>
             <p className="sub" style={{ textAlign: 'center', marginTop: 10, fontSize: 12 }}>
               {savedGuest ? `Signed in as ${savedGuest.name} — your booking will be linked to your account.` : 'Sign in with your guest account to manage bookings later.'}
             </p>

@@ -15,8 +15,9 @@ export default function Bookings() {
   const [checkout, setCheckout] = useState(null);
   const [docView, setDocView] = useState(null);
   const [currency, setCurrency] = useState('₹');
+  const [filter, setFilter] = useState('all');
   const [error, setError] = useState('');
-  const [form, setForm] = useState({ guest_id: '', room_id: '', check_in: '', check_out: '', adults: 1, children: 0, meal_plan: 'room_only', extras: [] });
+  const [form, setForm] = useState({ guest_id: '', room_id: '', check_in: '', check_out: '', adults: 1, children: 0, meal_plan: 'room_only', extras: [], payment_method: 'unpaid', id_proof_base64: '', id_proof_name: '', id_proof_mime: '' });
 
   const load = () => {
     get('/bookings').then(setBookings).catch(() => {});
@@ -45,16 +46,24 @@ export default function Bookings() {
     }
   }, []);
 
-  const create = async (e) => {
+   const create = async (e) => {
     e.preventDefault();
     setError('');
     try {
-      await post('/bookings', { ...form, status: 'confirmed' });
+      await post('/bookings', { ...form, status: 'confirmed', pay_now: form.payment_method === 'paid' });
       setShow(false);
       toast('Booking created');
       load();
     } catch (err) { setError(err.message); }
   };
+
+  const visible = bookings.filter((b) => {
+    if (filter === 'online') return b.source === 'online';
+    if (filter === 'staff') return b.source === 'staff';
+    if (filter === 'unpaid') return b.payment_status !== 'paid';
+    if (filter === 'paid') return b.payment_status === 'paid';
+    return true;
+  });
 
   const act = async (b, action, extra = {}) => {
     setError('');
@@ -71,15 +80,22 @@ export default function Bookings() {
       <div className="between">
         <h1>📅 Bookings</h1>
         <div className="row">
-          <button className="btn primary" onClick={() => { setForm({ guest_id: '', room_id: '', check_in: today, check_out: tomorrow, adults: 1, children: 0, meal_plan: 'room_only', extras: [] }); setShow(true); }}>➕ New Booking</button>
+          <button className="btn primary" onClick={() => { setForm({ guest_id: '', room_id: '', check_in: today, check_out: tomorrow, adults: 1, children: 0, meal_plan: 'room_only', extras: [], payment_method: 'unpaid', id_proof_base64: '', id_proof_name: '', id_proof_mime: '' }); setShow(true); }}>➕ New Offline Booking</button>
+          <select value={filter} onChange={(e) => setFilter(e.target.value)} className="badge" style={{ padding: '4px 10px', borderRadius: 8 }}>
+            <option value="all">All bookings</option>
+            <option value="online">Online (website)</option>
+            <option value="staff">Offline (staff)</option>
+            <option value="unpaid">Unpaid</option>
+            <option value="paid">Paid</option>
+          </select>
         </div>
       </div>
       {error && <div className="msg err" style={{ marginTop: 12 }}>{error}</div>}
       <div className="card" style={{ marginTop: 16 }}>
         <table>
-          <thead><tr><th>Ref</th><th>Guest</th><th>Room</th><th>Dates</th><th>Plan</th><th>Source</th><th>Status</th><th>Total</th><th>Actions</th></tr></thead>
+          <thead><tr><th>Ref</th><th>Guest</th><th>Room</th><th>Dates</th><th>Plan</th><th>Source</th><th>Payment</th><th>Status</th><th>Total</th><th>Actions</th></tr></thead>
           <tbody>
-            {bookings.map((b) => (
+            {visible.map((b) => (
               <tr key={b.id}>
                 <td><b style={{ color: 'var(--primary)' }}>{b.reference || '#' + b.id}</b></td>
                 <td>{b.guest_name}<br /><small style={{ color: 'var(--muted)' }}>{b.guest_phone}</small></td>
@@ -89,18 +105,20 @@ export default function Bookings() {
                  <td><span className={`badge ${b.source === 'online' ? 'open' : 'available'}`}>{b.source}</span>
                      {b.has_id_proof && <span className="badge" style={{ marginLeft: 6, background: '#0ea5e922', color: '#0ea5e9' }}>ID ✅</span>}
                  </td>
+                 <td><span className={'badge ' + (b.payment_status === 'paid' ? 'green' : 'red')}>{b.payment_status === 'paid' ? '💰 Paid' : '💳 ' + (b.payment_method || 'unpaid')}</span></td>
                  <td><span className={'badge ' + b.status}>{b.status}</span></td>
                  <td>{fmt(currency, b.total)}</td>
                  <td>
                    <div className="row" style={{ gap: 6 }}>
                      {b.has_id_proof && <button className="btn sm" title="View ID proof" onClick={async () => { const d = await get(`/bookings/${b.id}/document`); setDocView({ reference: b.reference, ...d }); }}>📎</button>}
+                     {b.payment_status !== 'paid' && ['confirmed', 'checked_in'].includes(b.status) && <button className="btn sm green" title="Mark paid" onClick={() => act(b, 'mark-paid')}>✓ Paid</button>}
                      {b.status === 'pending' && <button className="btn sm primary" onClick={() => act(b, 'confirm')}>Confirm</button>}
                      {b.status === 'confirmed' && <button className="btn sm green" onClick={() => act(b, 'checkin')}>Check-in</button>}
                      {b.status === 'checked_in' && <button className="btn sm primary" onClick={() => setCheckout(b)}>Check-out</button>}
                      {['pending', 'confirmed'].includes(b.status) && <button className="btn sm red" onClick={() => act(b, 'cancel')}>Cancel</button>}
                    </div>
                  </td>
-              </tr>
+               </tr>
             ))}
           </tbody>
         </table>
@@ -137,6 +155,26 @@ export default function Bookings() {
                 <option value="half_board">Half board</option>
                 <option value="full_board">Full board</option>
               </select>
+            </div>
+            <div style={{ marginTop: 10 }}>
+              <label>Payment</label>
+              <select value={form.payment_method} onChange={(e) => setForm({ ...form, payment_method: e.target.value })}>
+                <option value="paid">Paid (on arrival)</option>
+                <option value="unpaid">Unpaid (bill later)</option>
+              </select>
+            </div>
+            <div style={{ marginTop: 10 }}>
+              <label>ID proof (optional image — e.g. passport)</label>
+              <input type="file" accept="image/*" onChange={(e) => {
+                const f = e.target.files[0];
+                if (!f) return;
+                if (!f.type.startsWith('image/')) return;
+                if (f.size > 2 * 1024 * 1024) return;
+                const r = new FileReader();
+                r.onload = () => setForm({ ...form, id_proof_base64: r.result.split(',')[1], id_proof_name: f.name, id_proof_mime: f.type, id_proof_preview: r.result });
+                r.readAsDataURL(f);
+              }} />
+              {form.id_proof_preview && <img src={form.id_proof_preview} alt="preview" style={{ maxWidth: 120, borderRadius: 8, marginTop: 8, maxHeight: 100, objectFit: 'cover' }} />}
             </div>
             <div style={{ marginTop: 10 }}>
               <label>Extras (folio charges)</label>

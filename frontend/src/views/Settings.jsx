@@ -5,7 +5,7 @@ const JSON_OK = (v) => { try { JSON.parse(v); return true; } catch { return fals
 
 export default function Settings() {
   const [form, setForm] = useState({
-    hotel_name: 'Arynox_Hotel_ERP', hotel_address: '', hotel_phone: '', tax_rate: '5',
+    hotel_name: 'Hotel Laxmi Elite', hotel_address: '', hotel_phone: '', tax_rate: '5',
     email: '', welcome_message: '', tagline: '', primary_color: '#4f46e5',
     about_text: '', footer_text: '', facilities_json: '[]', gallery_json: '[]', social_json: '{}',
   });
@@ -51,6 +51,25 @@ export default function Settings() {
       {err && <div className="msg err">{err}</div>}
       <div className="between" style={{ marginBottom: 12 }}>
         <a href="#/" target="_blank" rel="noreferrer" className="btn">👁️ Preview public site</a>
+        <button className="btn" type="button" onClick={async () => {
+          try {
+            const r = await fetch('/api/export', { headers: { Authorization: 'Bearer ' + localStorage.getItem('arynox_token') } });
+            const data = await r.json();
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `hotel-export-${new Date().toISOString().slice(0,10)}.json`; a.click();
+          } catch (e) { alert('Export failed: ' + e.message); }
+        }}>📥 Export data</button>
+        <label style={{ fontSize: 12, color: 'var(--muted)' }}>Import JSON:
+          <input type="file" accept="application/json" onChange={async (e) => {
+            const f = e.target.files[0]; if (!f) return;
+            const text = await f.text();
+            try {
+              const data = JSON.parse(text);
+              const r = await fetch('/api/import', { method: 'POST', headers: { Authorization: 'Bearer ' + localStorage.getItem('arynox_token'), 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+              const j = await r.json(); alert('Imported ' + (j.imported || 0) + ' rows');
+            } catch (err) { alert('Import failed: ' + err.message); }
+          }} style={{ display: 'none' }} />
+        </label>
       </div>
 
       <div className="card" style={{ marginTop: 16, maxWidth: 640 }}>

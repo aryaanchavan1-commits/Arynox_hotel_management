@@ -5,6 +5,8 @@ import { ROLES } from '@/lib/roles';
 import { buildEscPos, htmlReceipt } from '@/lib/receipt';
 import { chat } from '@/lib/ai';
 import { Groq } from 'groq-sdk';
+import https from 'node:https';
+import crypto from 'node:crypto';
 
 export const runtime = 'nodejs';
 
@@ -77,8 +79,8 @@ async function handle(req, params) {
   }
   if (path[0] === 'public' && path[1] === 'bookings' && method === 'POST') {
     const b = await body(req);
-       const { room_type_id, check_in, check_out, adults, children, name, phone, email, id_type, id_number, address,
-      id_proof_base64, id_proof_name, id_proof_mime } = b;
+    const { room_type_id, check_in, check_out, adults, children, name, phone, email, id_type, id_number, address,
+      id_proof_base64, id_proof_name, id_proof_mime, pay_now } = b;
     if (!room_type_id || !check_in || !check_out || !name) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
@@ -104,16 +106,19 @@ async function handle(req, params) {
     const price = Number((await db.execute('SELECT price FROM room_types WHERE id=?', [room_type_id])).rows[0].price);
     const total = price * nights(check_in, check_out);
     const ref = makeRef();
+    const payStatus = pay_now ? 'paid' : 'unpaid';
     const r = await db.execute(
-      `INSERT INTO bookings (guest_id, room_id, check_in, check_out, adults, children, status, total, meal_plan, extras_json, source, reference, guest_account_id, id_proof_base64, id_proof_name, id_proof_mime)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      `INSERT INTO bookings (guest_id, room_id, check_in, check_out, adults, children, status, total, meal_plan, extras_json, source, reference, guest_account_id, id_proof_base64, id_proof_name, id_proof_mime, payment_status, payment_method)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [guestId, free.id, check_in, check_out, adults || 1, children || 0, 'pending', total, 'room_only', '[]', 'online', ref, guestAccountId,
-       id_proof_base64 || '', id_proof_name || '', id_proof_mime || '']);
+       id_proof_base64 || '', id_proof_name || '', id_proof_mime || '', payStatus, pay_now ? 'online' : '']);
+    const settings = await getSettings();
     return NextResponse.json({
       reference: ref, total, check_in, check_out, room_number: free.number,
-      hotel_name: (await getSettings()).hotel_name,
-      currency_symbol: (await getSettings()).currency_symbol || '₹',
+      hotel_name: settings.hotel_name,
+      currency_symbol: settings.currency_symbol || '₹',
       bookingId: Number(r.lastInsertRowid),
+      payment_status: payStatus,
     });
   }
   if (path[0] === 'auth' && path[1] === 'login' && method === 'POST') {
@@ -151,6 +156,65 @@ async function handle(req, params) {
     }
     const token = signToken({ kind: 'guest', gid: g.id, name: g.name, email: g.email });
     return NextResponse.json({ token, user: { id: g.id, name: g.name, email: g.email } });
+  }
+
+  // ---------- payments (public: webhook + guest checkout session; Razorpay via HTTPS, no SDK) ----------
+  if (path[0] === 'payments' && path[1] === 'webhook' && method === 'POST') {
+    try { await ensureReady(); } catch (e) { return NextResponse.json({ error: 'Database unavailable' }, { status: 503 }); }
+    const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
+    const raw = await req.text();
+    if (!secret) return NextResponse.json({ received: true });
+    const sig = req.headers.get('x-razorpay-signature') || '';
+    const expected = crypto.createHmac('sha256', secret).update(raw).digest('hex');
+    if (sig !== expected) return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
+    let evt;
+    try { evt = JSON.parse(raw); } catch { return NextResponse.json({ error: 'bad json' }, { status: 400 }); }
+    if (evt.event === 'payment.captured' && evt.payload) {
+      const bid = Number(evt.payload.booking_id);
+      await db.execute("UPDATE bookings SET payment_status='paid', payment_intent_id=? WHERE id=?", [evt.payload.id || 'rp', bid]);
+    }
+    return NextResponse.json({ received: true });
+  }
+  if (path[0] === 'payments' && path[1] === 'create-order' && method === 'POST') {
+    try { await ensureReady(); } catch (e) { return NextResponse.json({ error: 'Database unavailable' }, { status: 503 }); }
+    const key = process.env.RAZORPAY_KEY_ID;
+    const secret = process.env.RAZORPAY_KEY_SECRET;
+    if (!key || !secret) return NextResponse.json({ error: 'Payments not configured (set RAZORPAY_KEY_ID/SECRET)' }, { status: 501 });
+    const b = await body(req);
+    const { booking_id, currency } = b;
+    if (!booking_id) return NextResponse.json({ error: 'booking_id required' }, { status: 400 });
+    const bk = (await db.execute('SELECT id, total, reference FROM bookings WHERE id=?', [booking_id])).rows[0];
+    if (!bk) return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
+    const cur = currency || ((await getSettings()).currency_symbol === '₹' ? 'INR' : 'USD');
+    const amount = Number(bk.total) * 100;
+    const payload = new URLSearchParams({
+      amount: String(amount), currency: cur, 'payment_capture': '1',
+      'notes[booking_id]': String(bk.id), 'notes[reference]': bk.reference,
+    });
+    return new Promise((resolve) => {
+      const auth = 'Basic ' + Buffer.from(`${key}:${secret}`).toString('base64');
+      const req2 = https.request('https://api.razorpay.com/v1/orders', {
+        method: 'POST',
+        headers: { Authorization: auth, 'Content-Type': 'application/x-www-form-urlencoded', 'Content-Length': Buffer.byteLength(payload.toString()) },
+      }, (res) => {
+        let data = '';
+        res.on('data', (c) => (data += c));
+        res.on('end', () => {
+          try {
+            const j = JSON.parse(data);
+            if (j.id) {
+              db.execute("UPDATE bookings SET payment_intent_id=? WHERE id=?", [j.id, bk.id]);
+              resolve(NextResponse.json({ ok: true, order_id: j.id, key_id: key, amount: j.amount, currency: j.currency }));
+            } else {
+              resolve(NextResponse.json({ error: j.error?.description || 'Razorpay error', rp: j }, { status: 402 }));
+            }
+          } catch (e) { resolve(NextResponse.json({ error: 'Razorpay parse error' }, { status: 502 })); }
+        });
+      });
+      req2.on('error', () => resolve(NextResponse.json({ error: 'Razorpay request failed' }, { status: 502 })));
+      req2.write(payload.toString());
+      req2.end();
+    });
   }
 
   // everything else requires a valid token
@@ -218,7 +282,34 @@ async function handle(req, params) {
     return NextResponse.json(await getSettings());
   }
 
-  // ---------- users (admin / manager) ----------
+   // ---------- admin export / import ----------
+   if (path[0] === 'export' && method === 'GET' && user.role === 'admin') {
+     const tables = ['room_types', 'rooms', 'guests', 'bookings', 'menu_items', 'orders', 'order_items', 'bills', 'housekeeping_tasks', 'hotel_settings', 'guest_accounts'];
+     const data = {};
+     for (const t of tables) { try { data[t] = (await db.execute(`SELECT * FROM ${t}`)).rows; } catch { data[t] = []; } }
+     return NextResponse.json(data);
+   }
+   if (path[0] === 'import' && method === 'POST' && user.role === 'admin') {
+     const payload = await body(req);
+     const tables = ['room_types', 'rooms', 'guests', 'bookings', 'menu_items', 'orders', 'order_items', 'bills', 'housekeeping_tasks', 'hotel_settings', 'guest_accounts'];
+     let imported = 0;
+     for (const t of tables) {
+       if (!Array.isArray(payload[t])) continue;
+       try {
+         const cols = (await db.execute(`PRAGMA table_info(${t})`)).rows.map((c) => c.name);
+         for (const row of payload[t]) {
+           const keys = Object.keys(row).filter((k) => cols.includes(k));
+           if (!keys.length) continue;
+           const params = keys.map(() => '?').join(',');
+           await db.execute(`INSERT INTO ${t} (${keys.join(',')}) VALUES (${params})`, keys.map((k) => row[k]));
+           imported++;
+         }
+       } catch { /* skip */ }
+     }
+     return NextResponse.json({ ok: true, imported });
+   }
+
+   // ---------- users (admin / manager) ----------
   const isAdminOrManager = ['admin', 'manager'].includes(user.role);
   if (path[0] === 'users' && method === 'GET' && isAdminOrManager) {
     const rows = (await db.execute('SELECT id, username, name, role, enabled FROM users ORDER BY id')).rows;
@@ -249,6 +340,36 @@ async function handle(req, params) {
   }
   if (path[0] === 'users' && method === 'POST' && user.role !== 'admin') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  // ---------- admin export / import (admin only) ----------
+  if (path[0] === 'export' && method === 'GET' && user.role === 'admin') {
+    const tables = ['room_types', 'rooms', 'guests', 'bookings', 'users', 'menu_items',
+      'orders', 'order_items', 'bills', 'housekeeping_tasks', 'hotel_settings', 'guest_accounts'];
+    const data = {};
+    for (const t of tables) {
+      try { data[t] = (await db.execute(`SELECT * FROM ${t}`)).rows; } catch (e) { data[t] = []; }
+    }
+    return NextResponse.json(data);
+  }
+  if (path[0] === 'import' && method === 'POST' && user.role === 'admin') {
+    const payload = await body(req);
+    const tables = Object.keys(payload).filter((k) => Array.isArray(payload[k]));
+    let imported = 0;
+    for (const t of tables) {
+      try {
+        const cols = (await db.execute(`PRAGMA table_info(${t})`)).rows.map((c) => c.name);
+        const rows = payload[t];
+        for (const row of rows) {
+          const keys = Object.keys(row).filter((k) => cols.includes(k));
+          const vals = keys.map((k) => row[k]);
+          const params = keys.map(() => '?').join(',');
+          await db.execute(`INSERT INTO ${t} (${keys.join(',')}) VALUES (${params})`, vals);
+          imported++;
+        }
+      } catch (e) { /* skip table on error */ }
+    }
+    return NextResponse.json({ ok: true, imported });
   }
 
   // ---------- room types & rooms ----------
@@ -304,7 +425,7 @@ async function handle(req, params) {
    if (path[0] === 'bookings' && !path[1] && method === 'GET') {
     const rows = (await db.execute(
       `SELECT b.id, b.guest_id, b.room_id, b.check_in, b.check_out, b.adults, b.children, b.status, b.total, b.meal_plan,
-              b.extras_json, b.source, b.reference, b.guest_account_id, b.created_at,
+              b.extras_json, b.source, b.reference, b.guest_account_id, b.payment_status, b.payment_method,
               CASE WHEN b.id_proof_base64 IS NOT NULL AND b.id_proof_base64 != '' THEN 1 ELSE 0 END AS has_id_proof,
               g.name AS guest_name, g.phone AS guest_phone, r.number AS room_number,
               t.name AS room_type FROM bookings b
@@ -318,25 +439,28 @@ async function handle(req, params) {
     if (!b) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json({ has_id_proof: !!(b.id_proof_base64), name: b.id_proof_name, mime: b.id_proof_mime, base64: b.id_proof_base64 || '', status: b.status, reference: b.reference });
   }
-  if (path[0] === 'bookings' && method === 'POST' && !path[1]) {
+   if (path[0] === 'bookings' && method === 'POST' && !path[1]) {
     const b = await body(req);
-    const { guest_id, room_id, check_in, check_out, adults, children, status, meal_plan, extras, source, reference, guest_account_id } = b;
+    const { guest_id, room_id, check_in, check_out, adults, children, status, meal_plan, extras, source, reference, guest_account_id,
+      payment_method, id_proof_base64, id_proof_name, id_proof_mime, pay_now } = b;
     const price = await roomPrice(room_id);
     const total = price * nights(check_in, check_out);
-    // double-booking guard: reject if room already booked/occupied in overlapping dates
     const overlap = (await db.execute(
       `SELECT id FROM bookings WHERE room_id=? AND status NOT IN ('cancelled','checked_out') AND check_in < ? AND check_out > ?`,
       [room_id, check_out, check_in]
     )).rows[0];
     if (overlap) return NextResponse.json({ error: 'Room is not available for the selected dates' }, { status: 409 });
     const ref = reference || makeRef();
+    const paymentStatus = pay_now ? 'paid' : 'unpaid';
+    if (id_proof_base64 && String(id_proof_base64).length > 3_200_000) return NextResponse.json({ error: 'ID proof image too large (max 2MB)' }, { status: 413 });
     const r = await db.execute(
-      `INSERT INTO bookings (guest_id, room_id, check_in, check_out, adults, children, status, total, meal_plan, extras_json, source, reference, guest_account_id)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      `INSERT INTO bookings (guest_id, room_id, check_in, check_out, adults, children, status, total, meal_plan, extras_json, source, reference, guest_account_id, payment_status, payment_method, id_proof_base64, id_proof_name, id_proof_mime)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [guest_id, room_id, check_in, check_out, adults || 1, children || 0, status || 'confirmed', total,
-       meal_plan || 'room_only', JSON.stringify(extras || []), source || 'staff', ref, guest_account_id || 0]);
-    if (status === 'checked_in') {
-      await db.execute("UPDATE rooms SET status='occupied' WHERE id=?", [room_id]);
+       meal_plan || 'room_only', JSON.stringify(extras || []), source || 'staff', ref, guest_account_id || 0,
+       paymentStatus, payment_method || '', id_proof_base64 || '', id_proof_name || '', id_proof_mime || '']);
+    if (pay_now) {
+      await db.execute("UPDATE bookings SET payment_status='paid', payment_method=? WHERE id=?", [payment_method || 'cash', Number(r.lastInsertRowid)]);
     }
     return NextResponse.json({ id: Number(r.lastInsertRowid), total, reference: ref });
   }
@@ -387,6 +511,11 @@ async function handle(req, params) {
     )).rows[0];
     if (overlap) return NextResponse.json({ error: 'Room is no longer available for the selected dates' }, { status: 409 });
     await db.execute("UPDATE bookings SET status='confirmed' WHERE id=?", [path[1]]);
+    return NextResponse.json({ ok: true });
+  }
+  if (path[0] === 'bookings' && path[1] && path[2] === 'mark-paid' && method === 'POST') {
+    const b = await body(req);
+    await db.execute("UPDATE bookings SET payment_status='paid', payment_method=? WHERE id=?", [b.method || 'cash', path[1]]);
     return NextResponse.json({ ok: true });
   }
   if (path[0] === 'bookings' && path[1] && path[2] === 'update' && method === 'POST') {
@@ -638,13 +767,15 @@ async function handle(req, params) {
     const hkPending = (await db.execute("SELECT COUNT(*) c FROM housekeeping_tasks WHERE status != 'done'")).rows[0];
     const webNew = (await db.execute(
       "SELECT COUNT(*) c FROM bookings WHERE source='online' AND status IN ('pending','confirmed')")).rows[0];
+    const unpaid = (await db.execute(
+      "SELECT COUNT(*) c FROM bookings WHERE payment_status != 'paid' AND status IN ('confirmed','checked_in')")).rows[0];
     return NextResponse.json({
       totalRooms: Number(total.c), occupiedRooms: Number(occupied.c),
       occupancy: Math.round((Number(occupied.c) / Math.max(1, Number(total.c))) * 100),
       revenueToday: Number(rev.s), billsToday: Number(rev.n),
       checkedIn: Number(checkins.c), totalGuests: Number(guests.c), openOrders: Number(openOrders.c),
       pendingBookings: Number(pending.c), hkTasksPending: Number(hkPending.c), revenueByType: byType,
-      newWebBookings: Number(webNew.c),
+      newWebBookings: Number(webNew.c), unpaidBookings: Number(unpaid.c),
     });
   }
   if (path[0] === 'reports' && path[1] === 'web-bookings' && method === 'GET') {
