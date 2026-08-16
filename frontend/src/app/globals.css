@@ -562,6 +562,7 @@ label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 4px
 .qty-ctl button { width: 28px; height: 28px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.7); background: rgba(255,255,255,0.75); cursor: pointer; font-size: 15px; font-weight: 700; color: var(--pub-primary, #0f4c5b); }
 .qty-ctl b { min-width: 16px; text-align: center; }
 .menu-price-inline { color: var(--pub-accent, #b97926); font-weight: 700; margin-top: 3px; }
+.menu-img { width: 64px; height: 64px; border-radius: 12px; object-fit: cover; flex: none; border: 1px solid rgba(255,255,255,.6); }
 .venue-card.glass { display: flex; flex-direction: column; gap: 8px; }
 .venue-card.glass h3 { margin: 0; }
 .venue-card.glass p { font-size: 12.5px; color: var(--muted); flex: 1; }
@@ -613,7 +614,7 @@ label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 4px
 [data-theme="dark"] .public .public-theme, [data-theme="dark"] .public .public-hamburger { color: #ccd3e6; }
 .public .guest-bar .btn { background: var(--hm-primary); color: #fff; }
 
-/* hero — split heading + photo collage */
+/* hero ï¿½ split heading + photo collage */
 .hm-hero { display: flex; align-items: center; gap: 34px; padding: 44px 8px 30px; }
 .hm-hero-left { flex: 1.1; }
 .hm-hero h1 { font-size: clamp(30px, 4.6vw, 52px); font-weight: 700; line-height: 1.12; letter-spacing: -.6px; margin-bottom: 14px; }
@@ -634,22 +635,23 @@ label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 4px
 .hm-collage .tall { min-height: 300px; }
 .hm-collage .small { min-height: 143px; }
 
-/* stats strip — laribright counters */
+/* stats strip ï¿½ laribright counters */
 .stats-strip { margin: 4px 0 10px; gap: 10px; }
 .stats-strip .stat b { font-size: 32px; font-weight: 800; color: var(--hm-primary); font-family:'Poppins','Montserrat',sans-serif; }
 .stats-strip .stat span { color: #5a5f6e; font-size: 12px; font-weight: 500; }
 [data-theme="dark"] .stats-strip .stat span { color: #aab2c9; }
 
-/* search — laribright gold panel */
+/* search ï¿½ laribright gold panel */
 .public .public-search { background: var(--hm-gold); border: none; border-radius: 14px; padding: 22px 24px; box-shadow: 0 22px 44px -20px rgba(242,117,5,.4); margin-top: -22px; }
 .public .public-search label { color: #241c00; font-weight: 600; font-size: 13px; }
 .public .public-search input, .public .public-search select { background: #fff; border: none; border-radius: 10px; padding: 11px 12px; color: #111; font-weight: 500; }
 .public .public-search .btn.primary { background: var(--hm-primary); padding: 13px 30px; border-radius: 12px; }
 
-/* room cards — laribright white cards with teal BOOK NOW */
+/* room cards ï¿½ laribright white cards with teal BOOK NOW */
 .public .room-card-public { background: #fff; border: 1px solid #f0ede2; border-radius: 14px; box-shadow: 0 10px 26px -18px rgba(10,20,30,.25); }
 [data-theme="dark"] .public .room-card-public { background: #171a2b; border-color: #262b45; }
 .public .room-card-public .img { height: 172px; background: linear-gradient(135deg, var(--hm-primary), var(--hm-deep)); font-size: 46px; }
+.room-card-img { width: 100%; height: 172px; object-fit: cover; display: block; }
 .public .room-card-public .body { padding: 16px 18px 20px; }
 .public .room-card-public .name { font-size: 18px; font-weight: 700; }
 .public .room-card-public .price { color: var(--hm-primary); font-weight: 800; font-size: 16px; }
@@ -681,7 +683,7 @@ label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 4px
 .public .facility .icon { font-size: 34px; }
 .public .testimonial .stars { color: var(--hm-gold); letter-spacing: 3px; text-shadow: 0 1px 0 rgba(0,0,0,.08); }
 
-/* newsletter — laribright teal panel */
+/* newsletter ï¿½ laribright teal panel */
 .hm-newsletter { background: linear-gradient(135deg, var(--hm-primary), var(--hm-deep)); color: #fff; border-radius: 30px; padding: 42px 30px; text-align: center; margin: 38px 0; }
 .hm-newsletter p { font-size: 17px; opacity: .92; }
 .hm-newsletter h3 { font-size: clamp(24px, 3vw, 36px); font-weight: 700; margin: 6px 0 22px; }
@@ -690,7 +692,7 @@ label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 4px
 .hm-newsletter input::placeholder { color: rgba(255,255,255,.75); }
 .hm-newsletter .hm-btn { background: var(--hm-gold); color: #241c00; padding: 13px 40px; border-radius: 12px; font-size: 16px; }
 
-/* footer — laribright light footer + gold bar */
+/* footer ï¿½ laribright light footer + gold bar */
 .public .public-footer { background: #fff; color: #333; border-top: 1px solid #efece3; text-align: left; padding: 34px 26px 0; font-size: 14px; }
 [data-theme="dark"] .public .public-footer { background: #131625; color: #ccd3e6; border-color: rgba(255,255,255,.08); }
 .public .public-footer .big { color: var(--hm-orange); font-weight: 900; font-size: 22px; }

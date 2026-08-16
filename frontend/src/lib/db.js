@@ -55,7 +55,8 @@ CREATE TABLE IF NOT EXISTS room_types (
   capacity INTEGER NOT NULL DEFAULT 2,
   description TEXT DEFAULT '',
   amenities TEXT DEFAULT '',
-  image TEXT DEFAULT ''
+  image TEXT DEFAULT '',
+  visible INTEGER DEFAULT 1
 );
 CREATE TABLE IF NOT EXISTS rooms (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -123,7 +124,8 @@ CREATE TABLE IF NOT EXISTS menu_items (
   name TEXT NOT NULL,
   category TEXT DEFAULT 'main',
   price REAL NOT NULL,
-  available INTEGER DEFAULT 1
+  available INTEGER DEFAULT 1,
+  image TEXT DEFAULT ''
 );
 CREATE TABLE IF NOT EXISTS orders (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -345,6 +347,12 @@ async function seed() {
       await db.execute(`ALTER TABLE bookings ADD COLUMN ${col} TEXT DEFAULT ''`);
     } catch {}
   }
+  try {
+    await db.execute("ALTER TABLE menu_items ADD COLUMN image TEXT DEFAULT ''");
+  } catch {}
+  try {
+    await db.execute("ALTER TABLE room_types ADD COLUMN visible INTEGER DEFAULT 1");
+  } catch {}
 
   const channels = await db.execute('SELECT COUNT(*) AS c FROM channels');
   if (Number(channels.rows[0].c) === 0) {

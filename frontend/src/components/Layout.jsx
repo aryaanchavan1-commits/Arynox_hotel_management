@@ -15,6 +15,7 @@ const NAV = {
   pos: ['pos', '🧾', 'POS / Billing'],
   venue: ['venue', '🎪', 'Venue Hall'],
   channels: ['channels', '📡', 'Channel Manager'],
+  website: ['website', '🌐', 'Website Manager'],
   reports: ['reports', '📈', 'Reports'],
   assistant: ['assistant', '🤖', 'AI Assistant'],
   settings: ['settings', '⚙️', 'Settings'],
@@ -24,7 +25,7 @@ const SECTIONS = [
   ['Operations', ['dashboard', 'rooms', 'availability', 'bookings', 'guests']],
   ['Restaurant', ['restaurant', 'kitchen', 'pos']],
   ['Events', ['venue', 'channels']],
-  ['Management', ['users', 'reports', 'assistant', 'settings']],
+  ['Management', ['website', 'users', 'reports', 'assistant', 'settings']],
 ];
 
 function logout() {

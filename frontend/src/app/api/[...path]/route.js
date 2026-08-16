@@ -90,7 +90,7 @@ async function handle(req, params) {
   }
   if (path[0] === 'public' && path[1] === 'hotels' && method === 'GET') {
     const s = await getSettings();
-    const types = (await db.execute('SELECT * FROM room_types ORDER BY price')).rows.map((t) => ({
+    const types = (await db.execute('SELECT * FROM room_types WHERE visible=1 ORDER BY price')).rows.map((t) => ({
       ...t,
       amenities: (t.amenities || '').split(',').map((x) => x.trim()).filter(Boolean),
     }));
@@ -125,7 +125,7 @@ async function handle(req, params) {
     const byCat = {};
     for (const it of items) {
       const cat = it.category || 'main';
-      (byCat[cat] = byCat[cat] || []).push({ id: it.id, name: it.name, price: Number(it.price) });
+      (byCat[cat] = byCat[cat] || []).push({ id: it.id, name: it.name, price: Number(it.price), image: it.image || '' });
     }
     return NextResponse.json({
       settings: {
@@ -540,12 +540,24 @@ if (path[0] === 'import' && method === 'POST' && user.role === 'admin') {
   if (path[0] === 'room-types' && method === 'GET') return NextResponse.json((await db.execute('SELECT * FROM room_types')).rows);
   if (path[0] === 'room-types' && method === 'POST') {
     const { name, price, capacity, description, amenities, image } = await body(req);
-    await db.execute('INSERT INTO room_types (name, price, capacity, description, amenities, image) VALUES (?,?,?,?,?,?)', [name, price, capacity, description || '', amenities || '', image || '']);
+    if (!name || price === undefined) return NextResponse.json({ error: 'Name and price are required' }, { status: 400 });
+    await db.execute('INSERT INTO room_types (name, price, capacity, description, amenities, image) VALUES (?,?,?,?,?,?)', [String(name).slice(0, 120), Math.max(0, Number(price) || 0), Math.max(1, Number(capacity) || 2), String(description || '').slice(0, 1000), String(amenities || '').slice(0, 500), String(image || '').slice(0, 500)]);
     return NextResponse.json({ ok: true });
   }
   if (path[0] === 'room-types' && path[1] && method === 'PUT') {
-    const { name, price, capacity, description, amenities, image } = await body(req);
-    await db.execute('UPDATE room_types SET name=?, price=?, capacity=?, description=?, amenities=?, image=? WHERE id=?', [name, price, capacity, description, amenities || '', image || '', path[1]]);
+    const { name, price, capacity, description, amenities, image, visible } = await body(req);
+    const sets = [];
+    const vals = [];
+    if (name !== undefined) { sets.push('name=?'); vals.push(String(name).slice(0, 120)); }
+    if (price !== undefined) { sets.push('price=?'); vals.push(Math.max(0, Number(price) || 0)); }
+    if (capacity !== undefined) { sets.push('capacity=?'); vals.push(Math.max(1, Number(capacity) || 2)); }
+    if (description !== undefined) { sets.push('description=?'); vals.push(String(description || '').slice(0, 1000)); }
+    if (amenities !== undefined) { sets.push('amenities=?'); vals.push(String(amenities || '').slice(0, 500)); }
+    if (image !== undefined) { sets.push('image=?'); vals.push(String(image || '').slice(0, 500)); }
+    if (visible !== undefined) { sets.push('visible=?'); vals.push(visible ? 1 : 0); }
+    if (sets.length === 0) return NextResponse.json({ ok: true });
+    vals.push(path[1]);
+    await db.execute(`UPDATE room_types SET ${sets.join(',')} WHERE id=?`, vals);
     return NextResponse.json({ ok: true });
   }
 
@@ -738,13 +750,28 @@ if (path[0] === 'import' && method === 'POST' && user.role === 'admin') {
   // ---------- restaurant menu ----------
   if (path[0] === 'menu' && method === 'GET') return NextResponse.json((await db.execute('SELECT * FROM menu_items ORDER BY category, name')).rows);
   if (path[0] === 'menu' && method === 'POST') {
-    const { name, category, price } = await body(req);
-    await db.execute('INSERT INTO menu_items (name, category, price, available) VALUES (?,?,?,1)', [name, category || 'main', price]);
+    const { name, category, price, image, available } = await body(req);
+    if (!name || price === undefined) return NextResponse.json({ error: 'Name and price are required' }, { status: 400 });
+    await db.execute('INSERT INTO menu_items (name, category, price, available, image) VALUES (?,?,?,?,?)',
+      [String(name).slice(0, 120), String(category || 'main').slice(0, 40), Math.max(0, Number(price) || 0), available === undefined ? 1 : (available ? 1 : 0), String(image || '').slice(0, 500)]);
     return NextResponse.json({ ok: true });
   }
   if (path[0] === 'menu' && path[1] && method === 'PUT') {
-    const { name, category, price, available } = await body(req);
-    await db.execute('UPDATE menu_items SET name=?, category=?, price=?, available=? WHERE id=?', [name, category, price, available ? 1 : 0, path[1]]);
+    const { name, category, price, available, image } = await body(req);
+    const sets = [];
+    const vals = [];
+    if (name !== undefined) { sets.push('name=?'); vals.push(String(name).slice(0, 120)); }
+    if (category !== undefined) { sets.push('category=?'); vals.push(String(category).slice(0, 40)); }
+    if (price !== undefined) { sets.push('price=?'); vals.push(Math.max(0, Number(price) || 0)); }
+    if (available !== undefined) { sets.push('available=?'); vals.push(available ? 1 : 0); }
+    if (image !== undefined) { sets.push('image=?'); vals.push(String(image).slice(0, 500)); }
+    if (sets.length === 0) return NextResponse.json({ ok: true });
+    vals.push(path[1]);
+    await db.execute(`UPDATE menu_items SET ${sets.join(',')} WHERE id=?`, vals);
+    return NextResponse.json({ ok: true });
+  }
+  if (path[0] === 'menu' && path[1] && method === 'DELETE') {
+    await db.execute('DELETE FROM menu_items WHERE id=?', [path[1]]);
     return NextResponse.json({ ok: true });
   }
 

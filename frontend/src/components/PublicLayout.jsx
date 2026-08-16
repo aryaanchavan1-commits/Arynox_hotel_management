@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { get } from '../api.js';
 import ChatWidget from './ChatWidget.jsx';
 
-export default function PublicLayout({ guest, onGuestLogout, publicOnly, children }) {
+export default function PublicLayout({ guest, onGuestLogout, children }) {
   const route = location.hash.replace('#/', '') || 'home';
   const [open, setOpen] = useState(false);
   const [dark, setDark] = useState(() => (localStorage.getItem('arynox_theme') || 'light') === 'dark');
@@ -19,9 +19,6 @@ export default function PublicLayout({ guest, onGuestLogout, publicOnly, childre
   useEffect(() => {
     get('/public/hotels').then((d) => {
       setBrand(d.settings || {});
-      if (d.settings?.api_base_url) {
-        try { localStorage.setItem('api_base_url', d.settings.api_base_url); } catch {}
-      }
       if (d.settings?.primary_color) {
         document.documentElement.style.setProperty('--pub-primary', d.settings.primary_color);
       }
@@ -30,8 +27,6 @@ export default function PublicLayout({ guest, onGuestLogout, publicOnly, childre
 
   const name = brand?.hotel_name || 'Hotel Lakshmi Deluxe';
   const short = name.replace(/_(hotel|hotels?|resort|inn)/gi, '');
-  const erpUrl = brand?.api_base_url || '#/staff/login';
-  const erpProps = erpUrl.startsWith('http') ? { href: erpUrl, target: '_blank', rel: 'noreferrer' } : { href: erpUrl };
 
   const links = [
     ['home', 'Home'],
@@ -83,7 +78,6 @@ export default function PublicLayout({ guest, onGuestLogout, publicOnly, childre
             <p><a className="link" href="#/contact">Our Story</a></p>
             <p><a className="link" href="#/contact">Get in Touch</a></p>
             <p><a className="link" href="#/guest/login">Guest sign in</a></p>
-            {(!publicOnly || erpUrl.startsWith('http')) && <p><a className="link" {...(publicOnly ? erpProps : { href: '#/staff/login' })}>Staff sign in</a></p>}
           </div>
           <div className="hm-footer-col">
             <p><a className="link" href="#/restaurant">Dining Experience</a></p>
@@ -94,7 +88,6 @@ export default function PublicLayout({ guest, onGuestLogout, publicOnly, childre
         <p style={{ marginTop: 14, fontSize: 12, color: '#8b93ad' }}>{brand?.footer_text || `${name}. All rights reserved.`}</p>
         <div className="hm-footer-bar" />
       </footer>
-      {(!publicOnly || erpUrl.startsWith('http')) && <a className="staff-float" title="Staff / ERP login" {...(publicOnly ? erpProps : { href: '#/staff/login' })}>🏨 ERP</a>}
       <ChatWidget brand={brand} />
     </div>
   );

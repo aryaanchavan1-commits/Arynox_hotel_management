@@ -3,7 +3,8 @@ import React from 'react';
 export default function RoomCard({ room, currency }) {
   return (
     <div className="room-card-public">
-      <div className="img">🛏️</div>
+      {room.image ? <img src={room.image} alt={room.name} className="room-card-img" onError={(e) => { e.target.style.display = 'none'; }} />
+        : <div className="img">🛏️</div>}
       <div className="body">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10 }}>
           <div className="name">{room.name}</div>

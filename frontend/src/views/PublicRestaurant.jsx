@@ -83,6 +83,7 @@ export default function PublicRestaurant() {
                 <div className="menu-items">
                   {(grp.items || []).map((it) => (
                     <div key={it.id} className="menu-item glass">
+                      {it.image && <img src={it.image} alt={it.name} className="menu-img" onError={(e) => { e.target.style.display = 'none'; }} />}
                       <div>
                         <b>{it.name}</b>
                         <p className="menu-price-inline">₹{Number(it.price).toLocaleString('en-IN')}</p>

@@ -29,6 +29,7 @@ import PublicRestaurant from './views/PublicRestaurant.jsx';
 import PublicVenue from './views/PublicVenue.jsx';
 import Venue from './views/Venue.jsx';
 import ChannelManager from './views/ChannelManager.jsx';
+import Website from './views/Website.jsx';
 
 function useHashRoute() {
   const [route, setRoute] = useState(() => location.hash.replace('#/', '') || '');
@@ -50,7 +51,6 @@ export default function App() {
   const seg = route.split('/');
 
   const siteMode = getSiteMode();
-  const publicOnly = siteMode === 'public' || siteMode === 'restaurant';
 
   // hotel + restaurant + venue all live on the public website (merged single site)
 
@@ -91,6 +91,7 @@ export default function App() {
     pos: <POS />,
     venue: <Venue />,
     channels: <ChannelManager />,
+    website: <Website />,
     reports: <Reports />,
     assistant: <Assistant />,
     settings: <Settings />,
@@ -100,7 +101,7 @@ export default function App() {
   if (!isStaffArea) {
     const page = publicRoutes[route] || publicRoutes.home;
     return (
-      <PublicLayout guest={guest} publicOnly={publicOnly} onGuestLogout={() => { localStorage.removeItem('arynox_guest_token'); localStorage.removeItem('arynox_guest_user'); setGuest(null); }}>
+      <PublicLayout guest={guest} onGuestLogout={() => { localStorage.removeItem('arynox_guest_token'); localStorage.removeItem('arynox_guest_user'); setGuest(null); }}>
         {page}
       </PublicLayout>
     );
