@@ -29,6 +29,11 @@ export default function Kitchen() {
               <h3>Order #{o.id} · Table {o.table_no}</h3>
               <span className="badge open">{new Date(o.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
             </div>
+            {o.source === 'online' && (
+              <p style={{ fontSize: 12, margin: '6px 0 0', color: 'var(--primary)' }}>
+                {o.order_type === 'delivery' ? '🛵 Delivery' : '🥡 Pickup'} · {o.customer_name}{o.customer_phone ? ` · ${o.customer_phone}` : ''}
+              </p>
+            )}
             <table className="table">
               <tbody>
                 {o.items.map((it) => (

@@ -40,38 +40,43 @@ export default function Dashboard() {
   }, []);
 
   const cards = [
-    ['#4f46e5', 'Occupancy', s ? s.occupancy + '%' : '—'],
-    ['#16a34a', "Today's Revenue", s ? fmt(s.currency_symbol, s.revenueToday) : '—'],
-    ['#d97706', 'Checked In', s ? s.checkedIn : '—'],
-    ['#0891b2', 'Available Rooms', s ? s.totalRooms - s.occupiedRooms : '—'],
-    ['#7c3aed', 'Pending Bookings', s ? s.pendingBookings : '—'],
-    ['#0ea5e9', 'New Web Bookings', s ? s.newWebBookings : '—'],
-    ['#ef4444', 'Unpaid Bookings', s ? s.unpaidBookings : '—'],
-    ['#db2777', 'Open Restaurant Orders', s ? s.openOrders : '—'],
-    ['#ea580c', 'Housekeeping Tasks', s ? s.hkTasksPending : '—'],
+    ['📊', 'Occupancy', s ? s.occupancy + '%' : '—', 'occupancy'],
+    ['💰', "Today's Revenue", s ? fmt(s.currency_symbol, s.revenueToday) : '—', 'revenue'],
+    ['✅', 'Checked In', s ? s.checkedIn : '—', 'info'],
+    ['🚪', 'Available Rooms', s ? s.totalRooms - s.occupiedRooms : '—', 'info'],
+    ['🕐', 'Pending Bookings', s ? s.pendingBookings : '—', 'warn'],
+    ['🌐', 'New Web Bookings', s ? s.newWebBookings : '—', 'ok'],
+    ['💳', 'Unpaid Bookings', s ? s.unpaidBookings : '—', 'warn'],
+    ['🍽️', 'Open Restaurant Orders', s ? s.openOrders : '—', 'info'],
+    ['🧹', 'Housekeeping Tasks', s ? s.hkTasksPending : '—', 'info'],
   ];
 
   return (
     <div>
       <div className="between">
-        <h1>📊 Dashboard</h1>
-        <a href="#/assistant" className="btn">🤖 Ask AI Assistant</a>
+        <div>
+          <h1>Dashboard</h1>
+          <p className="sub">Hotel Laxmi Elite · overview of today's operations</p>
+        </div>
+        <div className="row">
+          <a href="#/bookings" className="btn primary">➕ New Booking</a>
+          <a href="#/pos" className="btn">⚡ Quick POS</a>
+          <a href="#/assistant" className="btn">🤖 AI Assistant</a>
+        </div>
       </div>
-      <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', margin: '16px 0' }}>
-        {cards.map(([c, l, v]) => (
-          <div key={l} className="stat-card" style={{ background: c }}>
-            <div className="num">{v}</div>
-            <div className="lbl">{l}</div>
+      <div className="kpi-grid">
+        {cards.map(([icon, label, value, tone]) => (
+          <div key={label} className={`kpi-card ${tone}`}>
+            <div className="kpi-top">
+              <p className="kpi-label">{label}</p>
+              <span className="kpi-icon">{icon}</span>
+            </div>
+            <p className="kpi-value">{value}</p>
           </div>
         ))}
       </div>
-      <div className="row" style={{ marginBottom: 14 }}>
-        <a href="#/bookings" className="btn primary">➕ New Booking</a>
-        <a href="#/pos" className="btn">⚡ Quick POS</a>
-        <a href="#/restaurant" className="btn">🍽️ Restaurant</a>
-      </div>
       <div className="card">
-        <h3>Recent bookings</h3>
+        <div className="between"><h3>Recent bookings</h3><a href="#/bookings" className="btn sm">View all</a></div>
         <table>
           <thead><tr><th>ID</th><th>Guest</th><th>Room</th><th>Check-in</th><th>Check-out</th><th>Status</th><th>Total</th></tr></thead>
           <tbody>

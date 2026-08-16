@@ -37,6 +37,8 @@ export default function PublicLayout({ guest, onGuestLogout, publicOnly, childre
     ['home', 'Home'],
     ['rooms', 'Rooms'],
     ['booking', 'Book Now'],
+    ['restaurant', 'Restaurant'],
+    ['venue', 'Venue Hall'],
     ['contact', 'Contact'],
   ];
 
@@ -49,7 +51,7 @@ export default function PublicLayout({ guest, onGuestLogout, publicOnly, childre
         </a>
         <nav className={`public-nav${open ? ' open' : ''}`}>
           {links.map(([key, label]) => (
-            <a key={key} href={`#/${key}`} className={route === key || (key === 'home' && !['rooms', 'booking', 'contact'].includes(route)) ? 'active' : ''}>{label}</a>
+            <a key={key} href={`#/${key}`} className={route === key || (key === 'home' && !['rooms', 'booking', 'restaurant', 'venue', 'contact'].includes(route)) ? 'active' : ''}>{label}</a>
           ))}
           {guest ? (
             <div className="guest-bar">

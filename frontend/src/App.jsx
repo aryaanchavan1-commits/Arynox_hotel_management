@@ -25,8 +25,9 @@ import PublicConfirm from './views/PublicConfirm.jsx';
 import GuestSignup from './views/GuestSignup.jsx';
 import GuestLogin from './views/GuestLogin.jsx';
 import GuestMyBookings from './views/GuestMyBookings.jsx';
-import RestaurantHome from './views/RestaurantHome.jsx';
-import RestaurantBooking from './views/RestaurantBooking.jsx';
+import PublicRestaurant from './views/PublicRestaurant.jsx';
+import PublicVenue from './views/PublicVenue.jsx';
+import Venue from './views/Venue.jsx';
 
 function useHashRoute() {
   const [route, setRoute] = useState(() => location.hash.replace('#/', '') || '');
@@ -48,18 +49,9 @@ export default function App() {
   const seg = route.split('/');
 
   const siteMode = getSiteMode();
-  const publicOnly = siteMode === 'public';
-  const restaurantMode = siteMode === 'restaurant';
+  const publicOnly = siteMode === 'public' || siteMode === 'restaurant';
 
-  // restaurant website mode: menu + table booking only, no hotel booking, no ERP
-  if (restaurantMode) {
-    const rpage = { menu: <RestaurantHome />, booking: <RestaurantBooking />, contact: <RestaurantHome /> }[seg[0]] || <RestaurantHome />;
-    return (
-      <RestaurantLayout>
-        {rpage}
-      </RestaurantLayout>
-    );
-  }
+  // hotel + restaurant + venue all live on the public website (merged single site)
 
   // ERP deployment: every route belongs to the staff interface (login screen when no session).
   // Website deployment: only public/guest routes; staff routes render the website home.
@@ -77,6 +69,8 @@ export default function App() {
     rooms: <PublicRooms />,
     booking: <PublicBooking setConfirm={setConfirm} />,
     confirm: <PublicConfirm confirm={confirm} setConfirm={setConfirm} />,
+    restaurant: <PublicRestaurant />,
+    venue: <PublicVenue />,
     'guest/login': <GuestLogin onLogin={setGuest} />,
     'guest/signup': <GuestSignup onLogin={setGuest} />,
     'guest/my-bookings': <GuestMyBookings guest={guest} onLogout={() => { localStorage.removeItem('arynox_guest_token'); localStorage.removeItem('arynox_guest_user'); setGuest(null); }} />,
@@ -94,6 +88,7 @@ export default function App() {
     kitchen: <Kitchen />,
     housekeeping: <Housekeeping />,
     pos: <POS />,
+    venue: <Venue />,
     reports: <Reports />,
     assistant: <Assistant />,
     settings: <Settings />,

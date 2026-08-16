@@ -92,7 +92,7 @@ async function handle(req, params) {
     const byCat = {};
     for (const it of items) {
       const cat = it.category || 'main';
-      (byCat[cat] = byCat[cat] || []).push({ name: it.name, price: Number(it.price) });
+      (byCat[cat] = byCat[cat] || []).push({ id: it.id, name: it.name, price: Number(it.price) });
     }
     return NextResponse.json({
       settings: {
@@ -125,6 +125,58 @@ async function handle(req, params) {
       [name, phone, String(b.email || '').slice(0, 100), date, time, guests, String(b.notes || '').slice(0, 500), 'pending']
     );
     return NextResponse.json({ ok: true, message: 'Reservation received' });
+  }
+  if (path[0] === 'public' && path[1] === 'venues' && method === 'GET') {
+    try { await ensureReady(); } catch (e) { return NextResponse.json({ error: 'Database unavailable, retrying…' }, { status: 503 }); }
+    const rows = (await db.execute("SELECT * FROM venues WHERE status='available' ORDER BY price")).rows;
+    return NextResponse.json(rows);
+  }
+  if (path[0] === 'public' && path[1] === 'venue-bookings' && method === 'POST') {
+    try { await ensureReady(); } catch (e) { return NextResponse.json({ error: 'Database unavailable, retrying…' }, { status: 503 }); }
+    const b = await body(req);
+    const name = String(b.name || '').trim().slice(0, 100);
+    const phone = String(b.phone || '').trim().slice(0, 30);
+    const date = String(b.date || '').trim().slice(0, 20);
+    const venueId = Number(b.venue_id) || 0;
+    if (!name || !phone || !date || !venueId) return NextResponse.json({ error: 'Name, phone, date and venue are required' }, { status: 400 });
+    await db.execute(
+      'INSERT INTO venue_bookings (venue_id, customer_name, customer_phone, customer_email, event_date, event_type, guests, notes, status) VALUES (?,?,?,?,?,?,?,?,?)',
+      [venueId, name, phone, String(b.email || '').slice(0, 100), date, String(b.event_type || 'Function').slice(0, 60), Math.min(2000, Math.max(1, Number(b.guests) || 50)), String(b.notes || '').slice(0, 500), 'pending']
+    );
+    return NextResponse.json({ ok: true, message: 'Venue enquiry received' });
+  }
+  if (path[0] === 'public' && path[1] === 'orders' && method === 'POST') {
+    try { await ensureReady(); } catch (e) { return NextResponse.json({ error: 'Database unavailable, retrying…' }, { status: 503 }); }
+    const b = await body(req);
+    const items = Array.isArray(b.items) ? b.items.slice(0, 50) : [];
+    const clean = [];
+    let total = 0;
+    for (const it of items) {
+      const id = Number(it.id) || 0;
+      const qty = Math.min(20, Math.max(1, Number(it.qty) || 1));
+      const mi = (await db.execute('SELECT name, price FROM menu_items WHERE id=? AND available=1', [id])).rows[0];
+      if (!mi) continue;
+      clean.push({ item_name: mi.name, price: Number(mi.price), qty });
+      total += Number(mi.price) * qty;
+    }
+    if (clean.length === 0) return NextResponse.json({ error: 'Your cart is empty' }, { status: 400 });
+    const name = String(b.name || '').trim().slice(0, 100);
+    const phone = String(b.phone || '').trim().slice(0, 30);
+    const orderType = ['delivery', 'pickup'].includes(b.order_type) ? b.order_type : 'pickup';
+    if (!name || !phone) return NextResponse.json({ error: 'Name and phone are required' }, { status: 400 });
+    const addr = orderType === 'delivery' ? String(b.address || '').trim().slice(0, 300) : '';
+    if (orderType === 'delivery' && !addr) return NextResponse.json({ error: 'Delivery address is required' }, { status: 400 });
+    const r = await db.execute(
+      "INSERT INTO orders (table_no, status, table_id, source, customer_name, customer_phone, order_type, address) VALUES ('ONLINE', 'open', 0, 'online', ?, ?, ?, ?)",
+      [name, phone, orderType, addr]
+    );
+    const orderId = Number(r.lastInsertRowid);
+    for (const it of clean) {
+      await db.execute('INSERT INTO order_items (order_id, item_name, price, qty, kot_status) VALUES (?, ?, ?, ?, ?)', [orderId, it.item_name, it.price, it.qty, 'new']);
+    }
+    const ref = makeRef();
+    await db.execute('UPDATE orders SET table_no=? WHERE id=?', [`ONLINE-${ref}`, orderId]);
+    return NextResponse.json({ ok: true, reference: ref, order_id: orderId, total });
   }
   if (path[0] === 'public' && path[1] === 'chat' && method === 'POST') {
     const b = await body(req);
@@ -363,14 +415,14 @@ async function handle(req, params) {
 
    // ---------- admin export / import ----------
    if (path[0] === 'export' && method === 'GET' && user.role === 'admin') {
-     const tables = ['room_types', 'rooms', 'guests', 'bookings', 'menu_items', 'orders', 'order_items', 'bills', 'housekeeping_tasks', 'hotel_settings', 'guest_accounts', 'table_reservations'];
+     const tables = ['room_types', 'rooms', 'guests', 'bookings', 'menu_items', 'orders', 'order_items', 'bills', 'housekeeping_tasks', 'hotel_settings', 'guest_accounts', 'table_reservations', 'venues', 'venue_bookings'];
      const data = {};
      for (const t of tables) { try { data[t] = (await db.execute(`SELECT * FROM ${t}`)).rows; } catch { data[t] = []; } }
      return NextResponse.json(data);
    }
    if (path[0] === 'import' && method === 'POST' && user.role === 'admin') {
      const payload = await body(req);
-     const tables = ['room_types', 'rooms', 'guests', 'bookings', 'menu_items', 'orders', 'order_items', 'bills', 'housekeeping_tasks', 'hotel_settings', 'guest_accounts', 'table_reservations'];
+     const tables = ['room_types', 'rooms', 'guests', 'bookings', 'menu_items', 'orders', 'order_items', 'bills', 'housekeeping_tasks', 'hotel_settings', 'guest_accounts', 'table_reservations', 'venues', 'venue_bookings'];
      let imported = 0;
      for (const t of tables) {
        if (!Array.isArray(payload[t])) continue;
@@ -424,7 +476,7 @@ async function handle(req, params) {
   // ---------- admin export / import (admin only) ----------
   if (path[0] === 'export' && method === 'GET' && user.role === 'admin') {
     const tables = ['room_types', 'rooms', 'guests', 'bookings', 'users', 'menu_items',
-      'orders', 'order_items', 'bills', 'housekeeping_tasks', 'hotel_settings', 'guest_accounts', 'table_reservations'];
+      'orders', 'order_items', 'bills', 'housekeeping_tasks', 'hotel_settings', 'guest_accounts', 'table_reservations', 'venues', 'venue_bookings'];
     const data = {};
     for (const t of tables) {
       try { data[t] = (await db.execute(`SELECT * FROM ${t}`)).rows; } catch (e) { data[t] = []; }
@@ -688,6 +740,43 @@ async function handle(req, params) {
     const b = await body(req);
     const status = ['pending', 'confirmed', 'cancelled', 'seated', 'done'].includes(b.status) ? b.status : 'pending';
     await db.execute('UPDATE table_reservations SET status=? WHERE id=?', [status, path[2]]);
+    return NextResponse.json({ ok: true });
+  }
+
+  // ---------- venues (function halls) ----------
+  if (path[0] === 'venues' && method === 'GET') {
+    return NextResponse.json((await db.execute('SELECT * FROM venues ORDER BY price')).rows);
+  }
+  if (path[0] === 'venues' && method === 'POST') {
+    const b = await body(req);
+    const r = await db.execute('INSERT INTO venues (name, capacity, price, description, emoji, status) VALUES (?,?,?,?,?,?)',
+      [String(b.name || '').slice(0, 120), Number(b.capacity) || 100, Number(b.price) || 0, String(b.description || '').slice(0, 500), String(b.emoji || '🎪'), b.status === 'maintenance' ? 'maintenance' : 'available']);
+    return NextResponse.json({ id: Number(r.lastInsertRowid) });
+  }
+  if (path[0] === 'venues' && path[1] && method === 'PUT') {
+    const b = await body(req);
+    await db.execute('UPDATE venues SET name=?, capacity=?, price=?, description=?, emoji=?, status=? WHERE id=?',
+      [String(b.name || '').slice(0, 120), Number(b.capacity) || 100, Number(b.price) || 0, String(b.description || '').slice(0, 500), String(b.emoji || '🎪'), b.status === 'maintenance' ? 'maintenance' : 'available', path[1]]);
+    return NextResponse.json({ ok: true });
+  }
+  if (path[0] === 'venues' && path[1] && method === 'DELETE') {
+    await db.execute('DELETE FROM venues WHERE id=?', [path[1]]);
+    return NextResponse.json({ ok: true });
+  }
+
+  // ---------- venue bookings ----------
+  if (path[0] === 'venue-bookings' && method === 'GET') {
+    const rows = (await db.execute('SELECT vb.*, v.name AS venue_name FROM venue_bookings vb LEFT JOIN venues v ON v.id=vb.venue_id ORDER BY vb.id DESC LIMIT 100')).rows;
+    return NextResponse.json(rows);
+  }
+  if (path[0] === 'venue-bookings' && path[1] && method === 'PUT') {
+    const b = await body(req);
+    const status = ['pending', 'confirmed', 'cancelled', 'completed'].includes(b.status) ? b.status : 'pending';
+    await db.execute('UPDATE venue_bookings SET status=? WHERE id=?', [status, path[1]]);
+    return NextResponse.json({ ok: true });
+  }
+  if (path[0] === 'venue-bookings' && path[1] && method === 'DELETE') {
+    await db.execute('DELETE FROM venue_bookings WHERE id=?', [path[1]]);
     return NextResponse.json({ ok: true });
   }
 

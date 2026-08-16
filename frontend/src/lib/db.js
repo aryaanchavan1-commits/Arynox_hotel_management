@@ -107,7 +107,35 @@ CREATE TABLE IF NOT EXISTS orders (
   table_no TEXT DEFAULT 'T1',
   status TEXT DEFAULT 'open',
   table_id INTEGER DEFAULT 0,
+  source TEXT DEFAULT 'staff',
+  customer_name TEXT DEFAULT '',
+  customer_phone TEXT DEFAULT '',
+  order_type TEXT DEFAULT 'dine_in',
+  address TEXT DEFAULT '',
   created_at TEXT DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS venues (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  capacity INTEGER DEFAULT 100,
+  price REAL DEFAULT 0,
+  description TEXT DEFAULT '',
+  emoji TEXT DEFAULT '🎪',
+  status TEXT DEFAULT 'available'
+);
+CREATE TABLE IF NOT EXISTS venue_bookings (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  venue_id INTEGER NOT NULL,
+  customer_name TEXT NOT NULL,
+  customer_phone TEXT DEFAULT '',
+  customer_email TEXT DEFAULT '',
+  event_date TEXT NOT NULL,
+  event_type TEXT DEFAULT 'Wedding',
+  guests INTEGER DEFAULT 100,
+  notes TEXT DEFAULT '',
+  status TEXT DEFAULT 'pending',
+  created_at TEXT DEFAULT (datetime('now')),
+  FOREIGN KEY (venue_id) REFERENCES venues(id)
 );
 CREATE TABLE IF NOT EXISTS order_items (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -266,6 +294,25 @@ async function seed() {
     ];
     for (const [name, cat, price] of items) {
       await db.execute('INSERT INTO menu_items (name, category, price, available) VALUES (?, ?, ?, 1)', [name, cat, price]);
+    }
+  }
+
+  // orders columns for online orders (existing DBs)
+  for (const col of ['source', 'customer_name', 'customer_phone', 'order_type', 'address']) {
+    try {
+      await db.execute(`ALTER TABLE orders ADD COLUMN ${col} TEXT DEFAULT ''`);
+    } catch {}
+  }
+
+  const venues = await db.execute('SELECT COUNT(*) AS c FROM venues');
+  if (Number(venues.rows[0].c) === 0) {
+    const v = [
+      ['Grand Banquet Hall', 400, 50000, 'A majestic air-conditioned banquet hall for weddings, receptions and corporate galas with stage, lighting and catering support.', '🎪'],
+      ['Rooftop Lawn', 300, 35000, 'Open-air rooftop lawn with panoramic city views — perfect for sangeet nights, cocktails and evening functions.', '🌃'],
+      ['Executive Conference Hall', 60, 15000, 'Boardroom-style conference hall with projector, sound system and high-speed Wi-Fi for meetings and seminars.', '💼'],
+    ];
+    for (const [name, capacity, price, description, emoji] of v) {
+      await db.execute('INSERT INTO venues (name, capacity, price, description, emoji, status) VALUES (?, ?, ?, ?, ?, ?)', [name, capacity, price, description, emoji, 'available']);
     }
   }
 

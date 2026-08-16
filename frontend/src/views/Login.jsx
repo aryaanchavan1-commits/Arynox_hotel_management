@@ -34,26 +34,25 @@ export default function Login({ onLogin }) {
   const backProps = backHref.startsWith('http') ? { target: '_blank', rel: 'noreferrer' } : {};
 
   return (
-    <div className="login-wrap">
-      <div className="login-card">
-        <div className="login-avatar">🏨</div>
-        <h2>{brand?.hotel_name || 'Hotel Laxmi Elite'}</h2>
-        <p className="login-sub">Staff sign in</p>
+    <div className="erp-login-wrap">
+      <div className="erp-login-card">
+        <img src="/logo.svg" alt="" className="erp-login-logo" />
+        <h1>{brand?.hotel_name || 'Hotel Laxmi Elite'}</h1>
+        <p className="erp-login-sub">Arynoxtech Hotel Management ERP · Staff sign in</p>
         <form onSubmit={submit} autoComplete="off">
           <input type="text" placeholder="Username" value={username}
             onChange={(e) => setUsername(e.target.value)} autoFocus autoComplete="off" />
           <input type="password" placeholder="Password" value={password}
             onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" />
-          <label className="login-check">
-            <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} /> Stay signed in
+          <label className="login-check" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: '#bbbbc4', marginBottom: 12 }}>
+            <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} style={{ width: 'auto' }} /> Stay signed in
           </label>
-          {error && <div className="msg err" style={{ marginTop: 10 }}>{error}</div>}
-          <button className="btn primary" style={{ width: '100%', marginTop: 14 }} disabled={busy}>
+          {error && <div className="erp-login-err">{error}</div>}
+          <button className="erp-login-btn" disabled={busy}>
             {busy ? 'Signing in…' : 'Sign in'}
           </button>
         </form>
-        <p className="login-hint">Staff accounts: admin, reception, manager, kitchen, restaurant, housekeeping &middot; password: the username + "123"</p>
-        <a className="login-alt" href={backHref} {...backProps}>← Back to website</a>
+        <a className="erp-login-alt" href={backHref} {...backProps}>← Back to website</a>
       </div>
     </div>
   );

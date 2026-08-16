@@ -136,13 +136,15 @@ export default function Restaurant() {
       </div>
 
       <div className="card">
-        <h3>Orders</h3>
+        <h3>Orders {orders.some((o) => o.source === 'online') && <span className="badge open" style={{ fontSize: 11 }}>includes online orders</span>}</h3>
         <table>
-          <thead><tr><th>ID</th><th>Table</th><th>Items</th><th>Total</th><th>Status</th><th>Action</th></tr></thead>
+          <thead><tr><th>ID</th><th>Table</th><th>Customer</th><th>Type</th><th>Items</th><th>Total</th><th>Status</th><th>Action</th></tr></thead>
           <tbody>
             {orders.map((o) => (
               <tr key={o.id} onClick={() => setSel(o.id)} style={{ cursor: 'pointer' }}>
                 <td>#{o.id}</td><td>{o.table_no}</td>
+                <td>{o.source === 'online' ? <b>{o.customer_name || '—'}</b> : '—'}</td>
+                <td>{o.source === 'online' ? (o.order_type === 'delivery' ? '🛵 Delivery' : '🥡 Pickup') : 'Dine-in'}</td>
                 <td>{(o.items || []).map((i) => `${i.item_name}×${i.qty}`).join(', ')}</td>
                 <td>₹{o.total.toFixed(2)}</td>
                 <td><span className={'badge ' + o.status}>{o.status}</span></td>
@@ -151,6 +153,9 @@ export default function Restaurant() {
             ))}
           </tbody>
         </table>
+        {orders.some((o) => o.source === 'online' && o.order_type === 'delivery') && (
+          <p className="sub" style={{ marginTop: 8, fontSize: 12 }}>🛵 Delivery orders: confirm address by phone, then send to Kitchen for KOT.</p>
+        )}
       </div>
 
       <div className="card" style={{ marginTop: 16 }}>

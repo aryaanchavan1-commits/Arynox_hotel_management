@@ -1,11 +1,11 @@
 export const ROLES = ['admin', 'manager', 'reception', 'kitchen', 'restaurant', 'housekeeping'];
 
 export const ROLE_MODULES = {
-  admin: ['dashboard', 'rooms', 'bookings', 'guests', 'users', 'restaurant', 'pos', 'reports', 'assistant', 'settings'],
-  manager: ['dashboard', 'rooms', 'bookings', 'guests', 'restaurant', 'pos', 'reports', 'assistant', 'settings'],
-  reception: ['dashboard', 'rooms', 'bookings', 'guests', 'pos', 'reports'],
+  admin: ['dashboard', 'rooms', 'bookings', 'guests', 'users', 'restaurant', 'kitchen', 'housekeeping', 'pos', 'venue', 'reports', 'assistant', 'settings'],
+  manager: ['dashboard', 'rooms', 'bookings', 'guests', 'restaurant', 'kitchen', 'housekeeping', 'pos', 'venue', 'reports', 'assistant', 'settings'],
+  reception: ['dashboard', 'rooms', 'bookings', 'guests', 'pos', 'venue', 'reports'],
   kitchen: ['kitchen'],
-  restaurant: ['restaurant', 'pos'],
+  restaurant: ['restaurant', 'pos', 'venue'],
   housekeeping: ['housekeeping', 'rooms'],
 };
 
