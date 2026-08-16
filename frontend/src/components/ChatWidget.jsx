@@ -5,7 +5,7 @@ const QUICK = ['Do you have rooms available?', 'What are your facilities?', 'Whe
 
 export default function ChatWidget({ brand }) {
   const [open, setOpen] = useState(false);
-  const [msgs, setMsgs] = useState([{ role: 'ai', text: `👋 Welcome to ${brand?.hotel_name || 'Hotel Laxmi Elite'}! Ask me about rooms, rates, facilities or how to book.` }]);
+  const [msgs, setMsgs] = useState([{ role: 'ai', text: `👋 Welcome to ${brand?.hotel_name || 'Hotel Lakshmi Deluxe'}! Ask me about rooms, rates, facilities or how to book.` }]);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const endRef = useRef(null);
@@ -34,7 +34,7 @@ export default function ChatWidget({ brand }) {
       {open && (
         <div className="chat-panel glass">
           <div className="chat-panel-head">
-            <b>💬 {brand?.hotel_name || 'Hotel Laxmi Elite'}</b>
+            <b>💬 {brand?.hotel_name || 'Hotel Lakshmi Deluxe'}</b>
             <span>Online — replies instantly</span>
           </div>
           <div className="chat-panel-msgs">

@@ -23,7 +23,7 @@ export default function RestaurantLayout({ children }) {
     }).catch(() => {});
   }, []);
 
-  const name = brand?.hotel_name || 'Hotel Laxmi Elite';
+  const name = brand?.hotel_name || 'Hotel Lakshmi Deluxe';
   const links = [
     ['menu', 'Menu'],
     ['booking', 'Book a Table'],

@@ -37,7 +37,7 @@ export default function Login({ onLogin }) {
     <div className="erp-login-wrap">
       <div className="erp-login-card">
         <img src="/logo.svg" alt="" className="erp-login-logo" />
-        <h1>{brand?.hotel_name || 'Hotel Laxmi Elite'}</h1>
+        <h1>{brand?.hotel_name || 'Hotel Lakshmi Deluxe'}</h1>
         <p className="erp-login-sub">Arynoxtech Hotel Management ERP · Staff sign in</p>
         <form onSubmit={submit} autoComplete="off">
           <input type="text" placeholder="Username" value={username}

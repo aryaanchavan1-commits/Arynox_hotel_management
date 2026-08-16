@@ -2,8 +2,14 @@ import './globals.css';
 import { headers } from 'next/headers';
 
 export const metadata = {
-  title: 'Hotel Laxmi Elite — Hotel + Restaurant + POS',
-  description: 'Hotel Laxmi Elite — luxury rooms, Aadhya multi-cuisine restaurant, rooftop pool, and seamless online booking.',
+  title: 'Lakshmi Deluxe — Hotel · Restaurant · Events',
+  description: 'Lakshmi Deluxe — exquisite rooms, multi-cuisine dining, online food ordering, venue halls for functions, and seamless online booking with real-time availability.',
+  keywords: 'hotel booking, restaurant, online order, venue hall, Lakshmi Deluxe, hotel management',
+  openGraph: {
+    title: 'Lakshmi Deluxe — Hotel · Restaurant · Events',
+    description: 'Book rooms, order food online, reserve tables and venue halls — all in one place.',
+    type: 'website',
+  },
   icons: {
     icon: '/favicon.svg',
     apple: '/favicon.svg',

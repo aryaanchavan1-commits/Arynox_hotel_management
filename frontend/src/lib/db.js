@@ -95,6 +95,29 @@ CREATE TABLE IF NOT EXISTS bookings (
   FOREIGN KEY (guest_id) REFERENCES guests(id),
   FOREIGN KEY (room_id) REFERENCES rooms(id)
 );
+CREATE TABLE IF NOT EXISTS channels (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  code TEXT UNIQUE NOT NULL,
+  name TEXT NOT NULL,
+  emoji_hint TEXT DEFAULT '📡',
+  enabled INTEGER DEFAULT 0,
+  auto_sync INTEGER DEFAULT 1,
+  practice INTEGER DEFAULT 1,
+  credentials_json TEXT DEFAULT '{}',
+  room_map_json TEXT DEFAULT '{}',
+  rate_multiplier REAL DEFAULT 1.0,
+  last_sync_at TEXT DEFAULT '',
+  last_sync_status TEXT DEFAULT '',
+  created_at TEXT DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS sync_logs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  channel_code TEXT NOT NULL,
+  direction TEXT DEFAULT 'push',
+  status TEXT DEFAULT 'ok',
+  message TEXT DEFAULT '',
+  created_at TEXT DEFAULT (datetime('now'))
+);
 CREATE TABLE IF NOT EXISTS menu_items (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
@@ -246,7 +269,7 @@ async function seed() {
 
   const users = await db.execute('SELECT COUNT(*) AS c FROM users');
   if (Number(users.rows[0].c) === 0) {
-    await db.execute('INSERT INTO users (username, password_hash, name, role, enabled) VALUES (?, ?, ?, ?, 1)', ['admin', hash('admin123', salt), 'Hotel Laxmi Elite Admin', 'admin']);
+    await db.execute('INSERT INTO users (username, password_hash, name, role, enabled) VALUES (?, ?, ?, ?, 1)', ['admin', hash('admin123', salt), 'Hotel Lakshmi Deluxe Admin', 'admin']);
     await db.execute('INSERT INTO users (username, password_hash, name, role, enabled) VALUES (?, ?, ?, ?, 1)', ['reception', hash('reception123', salt), 'Reception', 'reception']);
     await db.execute('INSERT INTO users (username, password_hash, name, role, enabled) VALUES (?, ?, ?, ?, 1)', ['manager', hash('manager123', salt), 'Manager', 'manager']);
     await db.execute('INSERT INTO users (username, password_hash, name, role, enabled) VALUES (?, ?, ?, ?, 1)', ['kitchen', hash('kitchen123', salt), 'Kitchen Staff', 'kitchen']);
@@ -316,23 +339,50 @@ async function seed() {
     }
   }
 
-  const brand = 'Hotel Laxmi Elite';
+  // bookings channel columns (existing DBs)
+  for (const col of ['channel', 'channel_ref']) {
+    try {
+      await db.execute(`ALTER TABLE bookings ADD COLUMN ${col} TEXT DEFAULT ''`);
+    } catch {}
+  }
+
+  const channels = await db.execute('SELECT COUNT(*) AS c FROM channels');
+  if (Number(channels.rows[0].c) === 0) {
+    const ch = [
+      ['makemytrip', 'MakeMyTrip', '🛫'],
+      ['bookingcom', 'Booking.com', '🅱️'],
+      ['goibibo', 'Goibibo', '🚙'],
+      ['agoda', 'Agoda', '🔵'],
+      ['expedia', 'Expedia', '✈️'],
+      ['airbnb', 'Airbnb', '🏠'],
+      ['cleartrip', 'Cleartrip', '🧳'],
+      ['paytm', 'Paytm Travel', '💛'],
+    ];
+    for (const [code, name, emoji] of ch) {
+      await db.execute('INSERT INTO channels (code, name, enabled, auto_sync, practice, emoji_hint) VALUES (?,?,0,1,1,?)', [code, name, emoji]);
+    }
+  }
+
+  const brand = 'Hotel Lakshmi Deluxe';
   const migrateBrand = (key, value) =>
     `INSERT INTO hotel_settings (key, value) VALUES ('${key}', '${value}')
      ON CONFLICT(key) DO UPDATE SET value = CASE WHEN hotel_settings.value IN ('Arynox Grand Hotel', 'ARYNOX HOTEL', 'Arynox', 'ARYNOX GRAND HOTEL', 'Arynox Hotel ERP', 'Arynox_Hotel_ERP', 'ARYNOX_HOTEL_ERP', 'Arynox Hotel ERP, Tech Park, Pune, India') THEN '${value}' ELSE hotel_settings.value END`;
   const ensureSetting = (key, value) =>
     `INSERT INTO hotel_settings (key, value) VALUES ('${key}', '${String(value).replace(/'/g, "''")}')
      ON CONFLICT(key) DO UPDATE SET value=excluded.value`;
+  // one-time branding rename (idempotent — no-op once done)
+  await db.execute("UPDATE hotel_settings SET value=REPLACE(value,'Hotel Laxmi Elite','Hotel Lakshmi Deluxe') WHERE key IN ('hotel_name','welcome_message','about_text','footer_text','hotel_address','tagline')");
+  await db.execute("UPDATE hotel_settings SET value=REPLACE(value,'Laxmi Elite','Lakshmi Deluxe') WHERE key IN ('hotel_name','welcome_message','about_text','footer_text','tagline')");
   await db.execute(migrateBrand('hotel_name', brand));
-  await db.execute(migrateBrand('hotel_address', 'Hotel Laxmi Elite, Near Rajwadu Resort, Mumbai-Pune Expressway, Pune, India'));
+  await db.execute(migrateBrand('hotel_address', 'Hotel Lakshmi Deluxe, Near Rajwadu Resort, Mumbai-Pune Expressway, Pune, India'));
   await db.execute(migrateBrand('hotel_phone', '+91 98765 43210'));
   await db.execute(migrateBrand('tax_rate', '5'));
   await db.execute(ensureSetting('currency_symbol', '₹'));
-  await db.execute(ensureSetting('welcome_message', 'Luxury redefined at Hotel Laxmi Elite'));
+  await db.execute(ensureSetting('welcome_message', 'Luxury redefined at Hotel Lakshmi Deluxe'));
   await db.execute(ensureSetting('tagline', 'Luxury · Dining · Celebration'));
-  await db.execute(ensureSetting('primary_color', '#0f4c5b'));
-  await db.execute(ensureSetting('secondary_color', '#b97926'));
-  await db.execute(ensureSetting('about_text', 'Hotel Laxmi Elite is a premium luxury hotel in Pune offering elegantly appointed rooms, a signature multi-cuisine restaurant, a rooftop pool, and warm Indian hospitality for discerning business and leisure travellers.'));
+  await db.execute(ensureSetting('primary_color', '#038C7F'));
+  await db.execute(ensureSetting('secondary_color', '#F2C641'));
+  await db.execute(ensureSetting('about_text', 'Hotel Lakshmi Deluxe is a premium luxury hotel in Pune offering elegantly appointed rooms, a signature multi-cuisine restaurant, a rooftop pool, and warm Indian hospitality for discerning business and leisure travellers.'));
   await db.execute(ensureSetting('email', 'reservations@laxmielite.com'));
   await db.execute(ensureSetting('facilities_json', JSON.stringify([
     { icon: '🌐', title: 'Free Wi-Fi', text: 'Ultra-fast Wi-Fi 6 in every room' },
@@ -343,17 +393,17 @@ async function seed() {
     { icon: '🧘', title: 'Spa & Wellness', text: 'Full-service spa & yoga pavilion' },
   ])));
   await db.execute(ensureSetting('gallery_json', JSON.stringify([
-    { emoji: '🛏️', label: 'Premier Rooms', color: 'linear-gradient(135deg,#0f4c5b,#b97926)' },
-    { emoji: '🍽️', label: 'Aadhya Dining', color: 'linear-gradient(135deg,#b97926,#0f4c5b)' },
-    { emoji: '🌇', label: 'Skyline', color: 'linear-gradient(135deg,#0f4c5b,#2a9d8a)' },
-    { emoji: '🏊', label: 'Rooftop Pool', color: 'linear-gradient(135deg,#2a9d8a,#b97926)' },
+    { emoji: '🛏️', label: 'Premier Rooms', color: 'linear-gradient(135deg,#038C7F,#F2C641)' },
+    { emoji: '🍽️', label: 'Aadhya Dining', color: 'linear-gradient(135deg,#F2C641,#038C7F)' },
+    { emoji: '🌇', label: 'Skyline', color: 'linear-gradient(135deg,#038C7F,#2a9d8a)' },
+    { emoji: '🏊', label: 'Rooftop Pool', color: 'linear-gradient(135deg,#2a9d8a,#F2C641)' },
   ])));
   await db.execute(ensureSetting('social_json', JSON.stringify({
     facebook: 'https://facebook.com/hotellaxmielite',
     instagram: 'https://instagram.com/hotellaxmielite',
     twitter: 'https://twitter.com/hotellaxmielite',
   })));
-  await db.execute(ensureSetting('footer_text', 'Hotel Laxmi Elite. All rights reserved.'));
+  await db.execute(ensureSetting('footer_text', 'Hotel Lakshmi Deluxe. All rights reserved.'));
   await db.execute(ensureSetting('restaurant_hours', 'Daily 7:00 AM – 11:00 PM'));
   await db.execute(ensureSetting('restaurant_about', 'A signature multi-cuisine restaurant with a rooftop lounge, craft cocktails and warm Indian hospitality — the perfect setting for family dinners, celebrations and business lunches.'));
   await db.execute(ensureSetting('restaurant_phone', '+91 98765 43210'));
@@ -366,7 +416,7 @@ async function seed() {
   await db.execute(ensureKeep('razorpay_webhook_secret', ''));
   await db.execute(ensureKeep('api_base_url', ''));
   await db.execute(ensureKeep('website_url', ''));
-  await db.execute("UPDATE users SET name='Hotel Laxmi Elite Admin' WHERE username='admin' AND name='Arynox Admin'");
+  await db.execute("UPDATE users SET name='Hotel Lakshmi Deluxe Admin' WHERE username='admin' AND name='Hotel Laxmi Elite Admin'");
 }
 
 let ready = false;

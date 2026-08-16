@@ -74,7 +74,7 @@ export default function PublicRestaurant() {
 
       <section className="public-section">
         <h2>Order Online</h2>
-        <p className="sub">Pickup or delivery — {s.hotel_name || 'Hotel Laxmi Elite'}, {s.hotel_address || 'Pune'}</p>
+        <p className="sub">Pickup or delivery — {s.hotel_name || 'Hotel Lakshmi Deluxe'}, {s.hotel_address || 'Pune'}</p>
         <div className="restaurant-layout">
           <div className="menu-col">
             {groups.map((grp) => (

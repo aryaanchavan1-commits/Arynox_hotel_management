@@ -28,6 +28,7 @@ import GuestMyBookings from './views/GuestMyBookings.jsx';
 import PublicRestaurant from './views/PublicRestaurant.jsx';
 import PublicVenue from './views/PublicVenue.jsx';
 import Venue from './views/Venue.jsx';
+import ChannelManager from './views/ChannelManager.jsx';
 
 function useHashRoute() {
   const [route, setRoute] = useState(() => location.hash.replace('#/', '') || '');
@@ -89,6 +90,7 @@ export default function App() {
     housekeeping: <Housekeeping />,
     pos: <POS />,
     venue: <Venue />,
+    channels: <ChannelManager />,
     reports: <Reports />,
     assistant: <Assistant />,
     settings: <Settings />,

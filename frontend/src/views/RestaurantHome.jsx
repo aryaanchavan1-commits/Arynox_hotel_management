@@ -23,7 +23,7 @@ export default function RestaurantHome() {
     <>
       <section className="restaurant-hero">
         <h1>{s.restaurant_about ? 'Aadhya Restaurant' : 'Aadhya Restaurant'}</h1>
-        <p className="tag">Multi-cuisine dining · Craft cocktails · {s.hotel_name || 'Hotel Laxmi Elite'}</p>
+        <p className="tag">Multi-cuisine dining · Craft cocktails · {s.hotel_name || 'Hotel Lakshmi Deluxe'}</p>
         <div className="hero-actions">
           <a href="#/booking" className="btn primary">Book a Table</a>
           <a href="#/contact" className="btn ghost">Visit Us</a>

@@ -31,6 +31,15 @@ export default function Dashboard() {
         }
       });
     }).catch(() => {});
+    get('/channel-bookings').then((cb) => {
+      const fresh = (cb || []).filter((b) => b.status === 'pending');
+      fresh.forEach((b) => {
+        if (!seen.has('ch-' + b.id)) {
+          setSeen((p) => new Set([...p, 'ch-' + b.id]));
+          toast.info(`OTA booking ${b.channel_ref} (${b.guest_name}) from ${b.channel} — confirm in Channel Manager.`);
+        }
+      });
+    }).catch(() => {});
   };
 
   useEffect(() => {
@@ -46,6 +55,7 @@ export default function Dashboard() {
     ['🚪', 'Available Rooms', s ? s.totalRooms - s.occupiedRooms : '—', 'info'],
     ['🕐', 'Pending Bookings', s ? s.pendingBookings : '—', 'warn'],
     ['🌐', 'New Web Bookings', s ? s.newWebBookings : '—', 'ok'],
+    ['📡', 'Channel Bookings', s ? s.channelBookings : '—', 'ok'],
     ['💳', 'Unpaid Bookings', s ? s.unpaidBookings : '—', 'warn'],
     ['🍽️', 'Open Restaurant Orders', s ? s.openOrders : '—', 'info'],
     ['🧹', 'Housekeeping Tasks', s ? s.hkTasksPending : '—', 'info'],
@@ -56,7 +66,7 @@ export default function Dashboard() {
       <div className="between">
         <div>
           <h1>Dashboard</h1>
-          <p className="sub">Hotel Laxmi Elite · overview of today's operations</p>
+          <p className="sub">Hotel Lakshmi Deluxe · overview of today's operations</p>
         </div>
         <div className="row">
           <a href="#/bookings" className="btn primary">➕ New Booking</a>

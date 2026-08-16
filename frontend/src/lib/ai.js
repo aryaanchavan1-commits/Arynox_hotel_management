@@ -127,7 +127,7 @@ async function runTool(name, args) {
   }
 }
 
-const SYSTEM = `You are "Hotel Laxmi Elite AI", the smart assistant of the Hotel Laxmi Elite ERP system (hotel + restaurant + POS).
+const SYSTEM = `You are "Hotel Lakshmi Deluxe AI", the smart assistant of the Hotel Lakshmi Deluxe ERP system (hotel + restaurant + POS).
 Answer hotel staff questions concisely using the tools when you need live data.
 If you have no answer, say so honestly. Keep answers short and friendly.
 IMPORTANT formatting rules:
@@ -177,12 +177,12 @@ function buildSitePrompt(ctx) {
     .join('\n');
   const facilities = (ctx.facilities || []).map((f) => `- ${f.title || ''}: ${f.text || ''}`).join('\n');
   const social = (ctx.social && Object.keys(ctx.social).length ? '\nSocial: ' + Object.entries(ctx.social).map(([k, v]) => `${k}: ${v}`).join(', ') : '');
-  return `You are the friendly website assistant of "${ctx.hotel_name || 'Hotel Laxmi Elite'}".
+  return `You are the friendly website assistant of "${ctx.hotel_name || 'Hotel Lakshmi Deluxe'}".
 Help website visitors with questions about the hotel, rooms, rates, amenities, booking, location and contact.
 ONLY answer using the hotel facts below. If the visitor asks something not covered, politely point them to the contact details provided.
 
 HOTEL FACTS:
-Name: ${ctx.hotel_name || 'Hotel Laxmi Elite'}
+Name: ${ctx.hotel_name || 'Hotel Lakshmi Deluxe'}
 Tagline: ${ctx.tagline || ''}
 Address: ${ctx.address || ''}
 Phone: ${ctx.phone || ''}
@@ -204,7 +204,7 @@ RULES:
 }
 
 export async function websiteChat(message, history, ctx, client) {
-  const fallback = `Thank you for reaching out to ${ctx.hotel_name || 'Hotel Laxmi Elite'}!
+  const fallback = `Thank you for reaching out to ${ctx.hotel_name || 'Hotel Lakshmi Deluxe'}!
 We would love to help. You can call us at ${ctx.phone || 'our front desk'} or email ${ctx.email || 'us'} for room rates, availability and bookings. For instant booking, visit the Rooms section and click "Book now".`;
   if (!client) return { reply: fallback };
   const messages = [

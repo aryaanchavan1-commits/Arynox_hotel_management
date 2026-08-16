@@ -1,9 +1,9 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { getBase } from '../api.js';
 
 export default function ReceiptModal({ bill, onClose }) {
   const [full, setFull] = useState(null);
-  const [settings, setSettings] = useState({ hotel_name: 'Hotel Laxmi Elite', hotel_address: '', hotel_phone: '' });
+  const [settings, setSettings] = useState({ hotel_name: 'Hotel Lakshmi Deluxe', hotel_address: '', hotel_phone: '' });
   const [printerIp, setPrinterIp] = useState('192.168.1.');
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
@@ -60,7 +60,7 @@ export default function ReceiptModal({ bill, onClose }) {
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <h3>ðŸ§¾ Receipt #{full.id} <span className="badge paid">{full.type} Â· {full.payment_method.toUpperCase()}</span></h3>
         <div className="receipt-preview">
-          <div className="c"><b>{settings.hotel_name || 'Hotel Laxmi Elite'}</b></div>
+          <div className="c"><b>{settings.hotel_name || 'Hotel Lakshmi Deluxe'}</b></div>
           {settings.hotel_address && <div className="c" style={{ fontSize: 12 }}>{settings.hotel_address}</div>}
           {settings.hotel_phone && <div className="c" style={{ fontSize: 12 }}>Tel: {settings.hotel_phone}</div>}
           <div className="line2">BILL #{full.id} Â· {full.created_at?.slice(0, 16)}</div>

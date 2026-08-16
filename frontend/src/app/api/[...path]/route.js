@@ -4,6 +4,7 @@ import { signToken, verifyToken, hash, SALT, isGuestToken, isStaffToken } from '
 import { ROLES } from '@/lib/roles';
 import { buildEscPos, htmlReceipt } from '@/lib/receipt';
 import { chat, websiteChat } from '@/lib/ai';
+import { syncChannel, autoSyncChannels } from '@/lib/channels';
 import { Groq } from 'groq-sdk';
 import https from 'node:https';
 import crypto from 'node:crypto';
@@ -11,6 +12,24 @@ import crypto from 'node:crypto';
 export const runtime = 'nodejs';
 
 const segs = (p) => (Array.isArray(p) ? p : p ? [p] : []);
+
+// ---- industry hardening: in-memory rate limiter (per instance, best effort) ----
+const rateBuckets = new Map();
+function rateLimit(key, limit, windowMs) {
+  const now = Date.now();
+  let b = rateBuckets.get(key);
+  if (!b || now - b.t > windowMs) { b = { n: 0, t: now }; }
+  b.n++;
+  rateBuckets.set(key, b);
+  if (rateBuckets.size > 5000) {
+    for (const [k, v] of rateBuckets) if (now - v.t > 2 * windowMs) rateBuckets.delete(k);
+  }
+  return b.n <= limit;
+}
+function clientIp(req) {
+  const fwd = (req.headers.get('x-forwarded-for') || '').split(',')[0].trim();
+  return fwd || req.headers.get('x-real-ip') || 'unknown';
+}
 
 function authUser(req, url) {
   const token = (req.headers.get('authorization') || '').replace('Bearer ', '') || url.searchParams.get('token');
@@ -39,10 +58,24 @@ async function handle(req, params) {
   const path = segs(params.path);
   const method = req.method;
 
+  // reject oversized request bodies early (protects the JSON parser + DB)
+  const cl = Number(req.headers.get('content-length') || 0);
+  if ((method === 'POST' || method === 'PUT') && cl > 4_500_000) {
+    return NextResponse.json({ error: 'Payload too large' }, { status: 413 });
+  }
+
   // public/restaurant mode: this deployment only serves the public website (booking, restaurant menu/reservations, guest, payments, health).
   // Staff/ERP API surface stays exclusively on the ERP deployment.
   if ((process.env.SITE_MODE === 'public' || process.env.SITE_MODE === 'restaurant') && !['health', 'public', 'guest', 'payments'].includes(path[0])) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
+
+  // throttle public write endpoints (abuse protection)
+  if (method === 'POST' && ['public', 'guest', 'payments'].includes(path[0])) {
+    const rk = `${path[0]}/${path[1] || ''}:${clientIp(req)}`;
+    if (!rateLimit(rk, 12, 60000)) {
+      return NextResponse.json({ error: 'Too many requests, please slow down' }, { status: 429 });
+    }
   }
 
   // public endpoints
@@ -420,9 +453,9 @@ async function handle(req, params) {
      for (const t of tables) { try { data[t] = (await db.execute(`SELECT * FROM ${t}`)).rows; } catch { data[t] = []; } }
      return NextResponse.json(data);
    }
-   if (path[0] === 'import' && method === 'POST' && user.role === 'admin') {
-     const payload = await body(req);
-     const tables = ['room_types', 'rooms', 'guests', 'bookings', 'menu_items', 'orders', 'order_items', 'bills', 'housekeeping_tasks', 'hotel_settings', 'guest_accounts', 'table_reservations', 'venues', 'venue_bookings'];
+if (path[0] === 'import' && method === 'POST' && user.role === 'admin') {
+      const payload = await body(req);
+      const tables = ['room_types', 'rooms', 'guests', 'bookings', 'menu_items', 'orders', 'order_items', 'bills', 'housekeeping_tasks', 'hotel_settings', 'guest_accounts', 'table_reservations', 'venues', 'venue_bookings', 'channels', 'sync_logs'];
      let imported = 0;
      for (const t of tables) {
        if (!Array.isArray(payload[t])) continue;
@@ -476,7 +509,7 @@ async function handle(req, params) {
   // ---------- admin export / import (admin only) ----------
   if (path[0] === 'export' && method === 'GET' && user.role === 'admin') {
     const tables = ['room_types', 'rooms', 'guests', 'bookings', 'users', 'menu_items',
-      'orders', 'order_items', 'bills', 'housekeeping_tasks', 'hotel_settings', 'guest_accounts', 'table_reservations', 'venues', 'venue_bookings'];
+      'orders', 'order_items', 'bills', 'housekeeping_tasks', 'hotel_settings', 'guest_accounts', 'table_reservations', 'venues', 'venue_bookings', 'channels', 'sync_logs'];
     const data = {};
     for (const t of tables) {
       try { data[t] = (await db.execute(`SELECT * FROM ${t}`)).rows; } catch (e) { data[t] = []; }
@@ -536,6 +569,7 @@ async function handle(req, params) {
     } else if (hk_status !== undefined) {
       await db.execute('UPDATE rooms SET hk_status=? WHERE id=?', [hk_status, path[1]]);
     }
+    autoSyncChannels().catch(() => {});
     return NextResponse.json({ ok: true });
   }
 
@@ -593,6 +627,7 @@ async function handle(req, params) {
     if (pay_now) {
       await db.execute("UPDATE bookings SET payment_status='paid', payment_method=? WHERE id=?", [payment_method || 'cash', Number(r.lastInsertRowid)]);
     }
+    autoSyncChannels().catch(() => {});
     return NextResponse.json({ id: Number(r.lastInsertRowid), total, reference: ref });
   }
   if (path[0] === 'bookings' && path[1] && path[2] === 'checkin' && method === 'POST') {
@@ -780,6 +815,68 @@ async function handle(req, params) {
     return NextResponse.json({ ok: true });
   }
 
+  // ---------- channel manager ----------
+  if (path[0] === 'channels' && method === 'GET' && path.length === 1) {
+    const rows = (await db.execute('SELECT * FROM channels ORDER BY id')).rows;
+    for (const ch of rows) {
+      try { ch.credentials = JSON.parse(ch.credentials_json || '{}'); } catch { ch.credentials = {}; }
+      try { ch.room_map = JSON.parse(ch.room_map_json || '{}'); } catch { ch.room_map = {}; }
+      delete ch.credentials_json; delete ch.room_map_json;
+    }
+    const logs = (await db.execute('SELECT * FROM sync_logs ORDER BY id DESC LIMIT 40')).rows;
+    return NextResponse.json({ channels: rows, logs });
+  }
+  if (path[0] === 'channels' && path[1] && method === 'PUT') {
+    const b = await body(req);
+    const sets = [];
+    const vals = [];
+    if (b.enabled !== undefined) { sets.push('enabled=?'); vals.push(b.enabled ? 1 : 0); }
+    if (b.auto_sync !== undefined) { sets.push('auto_sync=?'); vals.push(b.auto_sync ? 1 : 0); }
+    if (b.practice !== undefined) { sets.push('practice=?'); vals.push(b.practice ? 1 : 0); }
+    if (b.credentials !== undefined) { sets.push('credentials_json=?'); vals.push(JSON.stringify(b.credentials || {})); }
+    if (b.room_map !== undefined) { sets.push('room_map_json=?'); vals.push(JSON.stringify(b.room_map || {})); }
+    if (b.rate_multiplier !== undefined) { sets.push('rate_multiplier=?'); vals.push(Math.max(0.1, Math.min(10, Number(b.rate_multiplier) || 1))); }
+    if (sets.length === 0) return NextResponse.json({ ok: true });
+    vals.push(path[1]);
+    await db.execute(`UPDATE channels SET ${sets.join(',')} WHERE id=?`, vals);
+    return NextResponse.json({ ok: true });
+  }
+  if (path[0] === 'channels' && path[2] === 'sync' && method === 'POST') {
+    const channel = (await db.execute('SELECT * FROM channels WHERE id=?', [path[1]])).rows[0];
+    if (!channel) return NextResponse.json({ error: 'Channel not found' }, { status: 404 });
+    const s = (await db.execute("SELECT value FROM hotel_settings WHERE key='hotel_name'")).rows[0];
+    const cur = (await db.execute("SELECT value FROM hotel_settings WHERE key='currency_symbol'")).rows[0];
+    const ctx = { hotel_name: s?.value || 'Hotel Lakshmi Deluxe', currency: cur?.value || '₹' };
+    const result = await syncChannel(channel, ctx);
+    return NextResponse.json(result);
+  }
+  if (path[0] === 'channels' && path[1] === 'sync-all' && method === 'POST') {
+    const rows = (await db.execute('SELECT * FROM channels WHERE enabled=1')).rows;
+    const s = (await db.execute("SELECT value FROM hotel_settings WHERE key='hotel_name'")).rows[0];
+    const cur = (await db.execute("SELECT value FROM hotel_settings WHERE key='currency_symbol'")).rows[0];
+    const ctx = { hotel_name: s?.value || 'Hotel Lakshmi Deluxe', currency: cur?.value || '₹' };
+    const out = [];
+    for (const ch of rows) {
+      try { out.push({ code: ch.code, ...(await syncChannel(ch, ctx)) }); } catch (e) { out.push({ code: ch.code, error: e.message }); }
+    }
+    return NextResponse.json({ results: out });
+  }
+  if (path[0] === 'channels' && path[1] === 'logs' && method === 'GET') {
+    const rows = (await db.execute('SELECT * FROM sync_logs ORDER BY id DESC LIMIT 60')).rows;
+    return NextResponse.json(rows);
+  }
+  if (path[0] === 'channel-bookings' && method === 'GET') {
+    const rows = (await db.execute(
+      "SELECT b.*, g.name AS guest_name, g.phone AS guest_phone, r.number AS room_number, t.name AS room_type FROM bookings b JOIN guests g ON g.id=b.guest_id JOIN rooms r ON r.id=b.room_id JOIN room_types t ON t.id=r.room_type_id WHERE b.source='channel' ORDER BY b.id DESC LIMIT 50")).rows;
+    return NextResponse.json(rows);
+  }
+  if (path[0] === 'channel-bookings' && path[1] && method === 'PUT') {
+    const b = await body(req);
+    const status = ['pending', 'confirmed', 'checked_in', 'checked_out', 'cancelled'].includes(b.status) ? b.status : 'pending';
+    await db.execute('UPDATE bookings SET status=? WHERE id=? AND source=\'channel\'', [status, path[1]]);
+    return NextResponse.json({ ok: true });
+  }
+
   // ---------- restaurant orders ----------
   if (path[0] === 'orders' && method === 'GET' && url.searchParams.get('scope') === 'kitchen') {
     const rows = (await db.execute("SELECT * FROM orders WHERE status IN ('open','kot') ORDER BY id DESC LIMIT 50")).rows;
@@ -946,15 +1043,17 @@ async function handle(req, params) {
     const hkPending = (await db.execute("SELECT COUNT(*) c FROM housekeeping_tasks WHERE status != 'done'")).rows[0];
     const webNew = (await db.execute(
       "SELECT COUNT(*) c FROM bookings WHERE source='online' AND status IN ('pending','confirmed')")).rows[0];
+    const channelNew = (await db.execute(
+      "SELECT COUNT(*) c FROM bookings WHERE source='channel' AND status IN ('pending','confirmed')")).rows[0];
     const unpaid = (await db.execute(
-      "SELECT COUNT(*) c FROM bookings WHERE payment_status != 'paid' AND status IN ('confirmed','checked_in')")).rows[0];
+      "SELECT COUNT(*) c FROM bookings WHERE payment_status NOT IN ('paid','channel') AND status IN ('confirmed','checked_in')")).rows[0];
     return NextResponse.json({
       totalRooms: Number(total.c), occupiedRooms: Number(occupied.c),
       occupancy: Math.round((Number(occupied.c) / Math.max(1, Number(total.c))) * 100),
       revenueToday: Number(rev.s), billsToday: Number(rev.n),
       checkedIn: Number(checkins.c), totalGuests: Number(guests.c), openOrders: Number(openOrders.c),
       pendingBookings: Number(pending.c), hkTasksPending: Number(hkPending.c), revenueByType: byType,
-      newWebBookings: Number(webNew.c), unpaidBookings: Number(unpaid.c),
+      newWebBookings: Number(webNew.c), channelBookings: Number(channelNew.c), unpaidBookings: Number(unpaid.c),
     });
   }
   if (path[0] === 'reports' && path[1] === 'web-bookings' && method === 'GET') {
