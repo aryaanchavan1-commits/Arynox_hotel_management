@@ -77,6 +77,7 @@ async function handle(req, params) {
         currency_symbol: s.currency_symbol || '₹',
         footer_text: s.footer_text || '',
         api_base_url: s.api_base_url || '',
+        website_url: s.website_url || '',
         payments_enabled: !!(s.razorpay_key_id && s.razorpay_key_secret),
       },
       facilities,
