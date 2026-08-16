@@ -310,10 +310,14 @@ async function seed() {
   await db.execute(ensureSetting('restaurant_hours', 'Daily 7:00 AM – 11:00 PM'));
   await db.execute(ensureSetting('restaurant_about', 'A signature multi-cuisine restaurant with a rooftop lounge, craft cocktails and warm Indian hospitality — the perfect setting for family dinners, celebrations and business lunches.'));
   await db.execute(ensureSetting('restaurant_phone', '+91 98765 43210'));
-  await db.execute(ensureSetting('razorpay_key_id', ''));
-  await db.execute(ensureSetting('razorpay_key_secret', ''));
-  await db.execute(ensureSetting('razorpay_webhook_secret', ''));
-  await db.execute(ensureSetting('api_base_url', ''));
+  // secrets/URLs: only set when absent, never overwrite saved values on re-init
+  const ensureKeep = (key, value) =>
+    `INSERT INTO hotel_settings (key, value) SELECT '${key}', '${String(value).replace(/'/g, "''")}'
+     WHERE NOT EXISTS (SELECT 1 FROM hotel_settings WHERE key='${key}')`;
+  await db.execute(ensureKeep('razorpay_key_id', ''));
+  await db.execute(ensureKeep('razorpay_key_secret', ''));
+  await db.execute(ensureKeep('razorpay_webhook_secret', ''));
+  await db.execute(ensureKeep('api_base_url', ''));
   await db.execute("UPDATE users SET name='Hotel Laxmi Elite Admin' WHERE username='admin' AND name='Arynox Admin'");
 }
 
