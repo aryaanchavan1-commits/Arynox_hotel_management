@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Layout from './components/Layout.jsx';
 import PublicLayout from './components/PublicLayout.jsx';
+import RestaurantLayout from './components/RestaurantLayout.jsx';
 import { ToastProvider } from './components/Toast.jsx';
 import { ROLE_MODULES } from './lib/roles.js';
 import Dashboard from './views/Dashboard.jsx';
@@ -24,6 +25,8 @@ import PublicConfirm from './views/PublicConfirm.jsx';
 import GuestSignup from './views/GuestSignup.jsx';
 import GuestLogin from './views/GuestLogin.jsx';
 import GuestMyBookings from './views/GuestMyBookings.jsx';
+import RestaurantHome from './views/RestaurantHome.jsx';
+import RestaurantBooking from './views/RestaurantBooking.jsx';
 
 function useHashRoute() {
   const [route, setRoute] = useState(() => location.hash.replace('#/', '') || '');
@@ -35,6 +38,8 @@ function useHashRoute() {
   return route;
 }
 
+const getSiteMode = () => (typeof document !== 'undefined' ? (document.querySelector('meta[name="site-mode"]')?.getAttribute('content') || 'erp') : 'erp');
+
 export default function App() {
   const [user, setUser] = useState(() => JSON.parse(localStorage.getItem('arynox_user') || 'null'));
   const [guest, setGuest] = useState(() => JSON.parse(localStorage.getItem('arynox_guest_user') || 'null'));
@@ -42,8 +47,20 @@ export default function App() {
   const route = useHashRoute();
   const seg = route.split('/');
 
-  // On the public (Vercel) deployment the ERP is served exclusively by Render.
-  const publicOnly = process.env.NEXT_PUBLIC_SITE_MODE === 'public';
+  const siteMode = getSiteMode();
+  const publicOnly = siteMode === 'public';
+  const restaurantMode = siteMode === 'restaurant';
+
+  // restaurant website mode: menu + table booking only, no hotel booking, no ERP
+  if (restaurantMode) {
+    const rpage = { menu: <RestaurantHome />, booking: <RestaurantBooking />, contact: <RestaurantHome /> }[seg[0]] || <RestaurantHome />;
+    return (
+      <RestaurantLayout>
+        {rpage}
+      </RestaurantLayout>
+    );
+  }
+
   const isStaffArea = !publicOnly && seg[0] === 'staff';
   const staffKey = isStaffArea ? (seg[1] || 'dashboard') : '';
   const publicKey = isStaffArea ? '' : (seg[0] || 'home');
@@ -84,7 +101,7 @@ export default function App() {
   if (!isStaffArea) {
     const page = publicRoutes[route] || publicRoutes.home;
     return (
-      <PublicLayout guest={guest} onGuestLogout={() => { localStorage.removeItem('arynox_guest_token'); localStorage.removeItem('arynox_guest_user'); setGuest(null); }}>
+      <PublicLayout guest={guest} publicOnly={publicOnly} onGuestLogout={() => { localStorage.removeItem('arynox_guest_token'); localStorage.removeItem('arynox_guest_user'); setGuest(null); }}>
         {page}
       </PublicLayout>
     );

@@ -124,6 +124,18 @@ CREATE TABLE IF NOT EXISTS tables (
   seats INTEGER DEFAULT 4,
   status TEXT DEFAULT 'free'
 );
+CREATE TABLE IF NOT EXISTS table_reservations (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  phone TEXT DEFAULT '',
+  email TEXT DEFAULT '',
+  date TEXT NOT NULL,
+  time TEXT DEFAULT '19:00',
+  guests INTEGER DEFAULT 2,
+  notes TEXT DEFAULT '',
+  status TEXT DEFAULT 'pending',
+  created_at TEXT DEFAULT (datetime('now'))
+);
 CREATE TABLE IF NOT EXISTS housekeeping_tasks (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   room_id INTEGER NOT NULL,
@@ -295,6 +307,9 @@ async function seed() {
     twitter: 'https://twitter.com/hotellaxmielite',
   })));
   await db.execute(ensureSetting('footer_text', 'Hotel Laxmi Elite. All rights reserved.'));
+  await db.execute(ensureSetting('restaurant_hours', 'Daily 7:00 AM – 11:00 PM'));
+  await db.execute(ensureSetting('restaurant_about', 'A signature multi-cuisine restaurant with a rooftop lounge, craft cocktails and warm Indian hospitality — the perfect setting for family dinners, celebrations and business lunches.'));
+  await db.execute(ensureSetting('restaurant_phone', '+91 98765 43210'));
   await db.execute(ensureSetting('razorpay_key_id', ''));
   await db.execute(ensureSetting('razorpay_key_secret', ''));
   await db.execute(ensureSetting('razorpay_webhook_secret', ''));

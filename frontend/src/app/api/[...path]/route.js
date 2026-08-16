@@ -39,9 +39,9 @@ async function handle(req, params) {
   const path = segs(params.path);
   const method = req.method;
 
-  // public mode: this deployment only serves the public website (booking, guest, payments, health).
-  // Staff/ERP API surface stays exclusively on the Render deployment.
-  if (process.env.SITE_MODE === 'public' && !['health', 'public', 'guest', 'payments'].includes(path[0])) {
+  // public/restaurant mode: this deployment only serves the public website (booking, restaurant menu/reservations, guest, payments, health).
+  // Staff/ERP API surface stays exclusively on the ERP deployment.
+  if ((process.env.SITE_MODE === 'public' || process.env.SITE_MODE === 'restaurant') && !['health', 'public', 'guest', 'payments'].includes(path[0])) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
@@ -84,6 +84,46 @@ async function handle(req, params) {
       social,
       roomTypes: types,
     });
+  }
+  if (path[0] === 'public' && path[1] === 'restaurant' && method === 'GET') {
+    const s = await getSettings();
+    const items = (await db.execute('SELECT * FROM menu_items WHERE available=1 ORDER BY category, name')).rows;
+    const byCat = {};
+    for (const it of items) {
+      const cat = it.category || 'main';
+      (byCat[cat] = byCat[cat] || []).push({ name: it.name, price: Number(it.price) });
+    }
+    return NextResponse.json({
+      settings: {
+        hotel_name: s.hotel_name,
+        hotel_address: s.hotel_address,
+        hotel_phone: s.hotel_phone,
+        email: s.email || '',
+        restaurant_hours: s.restaurant_hours || 'Daily 7:00 AM – 11:00 PM',
+        restaurant_about: s.restaurant_about || '',
+        restaurant_phone: s.restaurant_phone || s.hotel_phone || '',
+        welcome_message: s.welcome_message,
+        primary_color: s.primary_color || '#4f46e5',
+        currency_symbol: s.currency_symbol || '₹',
+        footer_text: s.footer_text || '',
+      },
+      menu: Object.entries(byCat).map(([category, items]) => ({ category, items })),
+    });
+  }
+  if (path[0] === 'public' && path[1] === 'reservations' && method === 'POST') {
+    try { await ensureReady(); } catch (e) { return NextResponse.json({ error: 'Database unavailable, retrying…' }, { status: 503 }); }
+    const b = await body(req);
+    const name = String(b.name || '').trim().slice(0, 100);
+    const phone = String(b.phone || '').trim().slice(0, 30);
+    const date = String(b.date || '').trim().slice(0, 20);
+    const time = String(b.time || '19:00').slice(0, 10);
+    const guests = Math.min(40, Math.max(1, Number(b.guests) || 2));
+    if (!name || !phone || !date) return NextResponse.json({ error: 'Name, phone and date are required' }, { status: 400 });
+    await db.execute(
+      'INSERT INTO table_reservations (name, phone, email, date, time, guests, notes, status) VALUES (?,?,?,?,?,?,?,?)',
+      [name, phone, String(b.email || '').slice(0, 100), date, time, guests, String(b.notes || '').slice(0, 500), 'pending']
+    );
+    return NextResponse.json({ ok: true, message: 'Reservation received' });
   }
   if (path[0] === 'public' && path[1] === 'chat' && method === 'POST') {
     const b = await body(req);
@@ -322,14 +362,14 @@ async function handle(req, params) {
 
    // ---------- admin export / import ----------
    if (path[0] === 'export' && method === 'GET' && user.role === 'admin') {
-     const tables = ['room_types', 'rooms', 'guests', 'bookings', 'menu_items', 'orders', 'order_items', 'bills', 'housekeeping_tasks', 'hotel_settings', 'guest_accounts'];
+     const tables = ['room_types', 'rooms', 'guests', 'bookings', 'menu_items', 'orders', 'order_items', 'bills', 'housekeeping_tasks', 'hotel_settings', 'guest_accounts', 'table_reservations'];
      const data = {};
      for (const t of tables) { try { data[t] = (await db.execute(`SELECT * FROM ${t}`)).rows; } catch { data[t] = []; } }
      return NextResponse.json(data);
    }
    if (path[0] === 'import' && method === 'POST' && user.role === 'admin') {
      const payload = await body(req);
-     const tables = ['room_types', 'rooms', 'guests', 'bookings', 'menu_items', 'orders', 'order_items', 'bills', 'housekeeping_tasks', 'hotel_settings', 'guest_accounts'];
+     const tables = ['room_types', 'rooms', 'guests', 'bookings', 'menu_items', 'orders', 'order_items', 'bills', 'housekeeping_tasks', 'hotel_settings', 'guest_accounts', 'table_reservations'];
      let imported = 0;
      for (const t of tables) {
        if (!Array.isArray(payload[t])) continue;
@@ -383,7 +423,7 @@ async function handle(req, params) {
   // ---------- admin export / import (admin only) ----------
   if (path[0] === 'export' && method === 'GET' && user.role === 'admin') {
     const tables = ['room_types', 'rooms', 'guests', 'bookings', 'users', 'menu_items',
-      'orders', 'order_items', 'bills', 'housekeeping_tasks', 'hotel_settings', 'guest_accounts'];
+      'orders', 'order_items', 'bills', 'housekeeping_tasks', 'hotel_settings', 'guest_accounts', 'table_reservations'];
     const data = {};
     for (const t of tables) {
       try { data[t] = (await db.execute(`SELECT * FROM ${t}`)).rows; } catch (e) { data[t] = []; }
@@ -636,6 +676,17 @@ async function handle(req, params) {
     } else if (status !== undefined) {
       await db.execute('UPDATE tables SET status=? WHERE id=?', [status, path[1]]);
     }
+    return NextResponse.json({ ok: true });
+  }
+
+  // ---------- restaurant reservations (from public website) ----------
+  if (path[0] === 'restaurant' && path[1] === 'reservations' && method === 'GET') {
+    return NextResponse.json((await db.execute('SELECT * FROM table_reservations ORDER BY id DESC LIMIT 100')).rows);
+  }
+  if (path[0] === 'restaurant' && path[1] === 'reservations' && path[2] && method === 'PUT') {
+    const b = await body(req);
+    const status = ['pending', 'confirmed', 'cancelled', 'seated', 'done'].includes(b.status) ? b.status : 'pending';
+    await db.execute('UPDATE table_reservations SET status=? WHERE id=?', [status, path[2]]);
     return NextResponse.json({ ok: true });
   }
 

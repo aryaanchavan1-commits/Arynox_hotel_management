@@ -2,13 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { get } from '../api.js';
 import ChatWidget from './ChatWidget.jsx';
 
-const publicOnly = process.env.NEXT_PUBLIC_SITE_MODE === 'public';
-
-export default function PublicLayout({ guest, onGuestLogout, children }) {
+export default function PublicLayout({ guest, onGuestLogout, publicOnly, children }) {
   const route = location.hash.replace('#/', '') || 'home';
   const [open, setOpen] = useState(false);
+  const [dark, setDark] = useState(() => (localStorage.getItem('arynox_theme') || 'light') === 'dark');
   const [brand, setBrand] = useState(null);
   useEffect(() => { setOpen(false); }, [route]);
+  useEffect(() => { document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light'); }, [dark]);
+
+  const toggleDark = () => {
+    const next = !dark;
+    setDark(next);
+    localStorage.setItem('arynox_theme', next ? 'dark' : 'light');
+  };
 
   useEffect(() => {
     get('/public/hotels').then((d) => {
@@ -58,6 +64,7 @@ export default function PublicLayout({ guest, onGuestLogout, children }) {
             </>
           )}
         </nav>
+        <button className="public-theme" onClick={toggleDark} aria-label="Toggle theme" title={dark ? 'Light mode' : 'Dark mode'}>{dark ? '☀️' : '🌙'}</button>
         <button className="public-hamburger" onClick={() => setOpen(!open)} aria-label="Menu">☰</button>
       </header>
       <main className="public-main">{children}</main>
@@ -66,12 +73,12 @@ export default function PublicLayout({ guest, onGuestLogout, children }) {
         <p style={{ marginTop: 6 }}>{brand?.hotel_address || 'Near Rajwadu Resort, Mumbai-Pune Expressway, Pune, India'}</p>
         <p style={{ marginTop: 4 }}>📞 {brand?.hotel_phone || '+91 98765 43210'}{brand?.email ? ` · ✉️ ${brand.email}` : ''}</p>
         <div style={{ marginTop: 8, display: 'flex', gap: 14, justifyContent: 'center' }}>
-          <a className="link" href="#/guest/login">Guest sign in</a> ·{' '}
-          <a className="link" {...(publicOnly ? erpProps : { href: '#/staff/login' })}>Staff sign in</a>
+          <a className="link" href="#/guest/login">Guest sign in</a>
+          {(!publicOnly || erpUrl.startsWith('http')) && <> ·{' '}<a className="link" {...(publicOnly ? erpProps : { href: '#/staff/login' })}>Staff sign in</a></>}
         </div>
         <p style={{ marginTop: 8, fontSize: 12, color: '#8b93ad' }}>{brand?.footer_text || `${name}. All rights reserved.`}</p>
       </footer>
-      <a className="staff-float" title="Staff / ERP login" {...(publicOnly ? erpProps : { href: '#/staff/login' })}>🏨 ERP</a>
+      {(!publicOnly || erpUrl.startsWith('http')) && <a className="staff-float" title="Staff / ERP login" {...(publicOnly ? erpProps : { href: '#/staff/login' })}>🏨 ERP</a>}
       <ChatWidget brand={brand} />
     </div>
   );

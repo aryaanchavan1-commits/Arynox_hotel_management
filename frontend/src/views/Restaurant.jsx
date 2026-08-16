@@ -13,11 +13,13 @@ export default function Restaurant() {
   const [newTableId, setNewTableId] = useState('');
   const [taxRate, setTaxRate] = useState(5);
   const [error, setError] = useState('');
+  const [reservations, setReservations] = useState([]);
 
   const load = () => {
     get('/menu').then(setMenu).catch(() => {});
     get('/orders').then(setOrders).catch(() => {});
     get('/tables').then(setTables).catch(() => {});
+    get('/restaurant/reservations').then(setReservations).catch(() => {});
     get('/settings').then((s) => s.tax_rate && setTaxRate(Number(s.tax_rate))).catch(() => {});
   };
   useEffect(load, []);
@@ -53,6 +55,12 @@ export default function Restaurant() {
     const r = await post(`/orders/${o.id}/pay`, { method: 'cash' });
     setReceipt(r.billId);
     toast('Bill paid');
+    load();
+  };
+
+  const setReservationStatus = async (r, status) => {
+    await put(`/restaurant/reservations/${r.id}`, { status });
+    toast(`Reservation ${status}`);
     load();
   };
 
@@ -143,6 +151,34 @@ export default function Restaurant() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      <div className="card" style={{ marginTop: 16 }}>
+        <h3>📅 Table Reservations <span className="badge open" style={{ fontSize: 11 }}>from website</span></h3>
+        {reservations.length === 0 ? (
+          <div className="empty">No reservations yet — they appear here automatically when guests book from the restaurant website.</div>
+        ) : (
+          <table>
+            <thead><tr><th>ID</th><th>Guest</th><th>Phone</th><th>Date</th><th>Time</th><th>Guests</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody>
+              {reservations.map((r) => (
+                <tr key={r.id}>
+                  <td>#{r.id}</td>
+                  <td>{r.name}{r.notes ? <div style={{ fontSize: 11, color: 'var(--muted)' }}>{r.notes}</div> : null}</td>
+                  <td>{r.phone}</td>
+                  <td>{r.date}</td>
+                  <td>{r.time}</td>
+                  <td>{r.guests}</td>
+                  <td><span className={'badge ' + (r.status === 'confirmed' ? 'available' : r.status === 'cancelled' ? 'cancelled' : 'open')}>{r.status}</span></td>
+                  <td className="row" style={{ gap: 6 }}>
+                    {r.status !== 'confirmed' && <button className="btn sm green" onClick={() => setReservationStatus(r, 'confirmed')}>Confirm</button>}
+                    {r.status !== 'cancelled' && <button className="btn sm red" onClick={() => setReservationStatus(r, 'cancelled')}>Cancel</button>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
       {receipt && <ReceiptModal bill={{ id: receipt }} onClose={() => setReceipt(null)} />}

@@ -48,6 +48,13 @@ export default function PublicHome() {
         <button className="btn primary" type="submit">Check availability</button>
       </form>
 
+      <div className="stats-strip fade-up">
+        <div className="stat"><b>{types.length || 6}+</b><span>Room types</span></div>
+        <div className="stat"><b>4.8★</b><span>Guest rating</span></div>
+        <div className="stat"><b>{facilities.length || 6}+</b><span>Facilities</span></div>
+        <div className="stat"><b>24×7</b><span>Front desk</span></div>
+      </div>
+
       <section className="public-section" id="rooms">
         <h2>Our Rooms</h2>
         <p className="sub">Comfortable stays for every traveller</p>
@@ -97,6 +104,16 @@ export default function PublicHome() {
         </div>
       </section>
 
+      <section className="public-section">
+        <h2>What Guests Say</h2>
+        <p className="sub">Real stays, real smiles</p>
+        <div className="testimonials">
+          <div className="testimonial"><div className="stars">★★★★★</div><p>"Beautiful rooms, spotless housekeeping and the rooftop pool at sunset is unforgettable."</p><div className="who">— Priya S., Pune</div></div>
+          <div className="testimonial"><div className="stars">★★★★★</div><p>"Aadhya restaurant's butter chicken is the best in the city. Staff went out of their way for our anniversary."</p><div className="who">— Rajesh &amp; Meera K., Mumbai</div></div>
+          <div className="testimonial"><div className="stars">★★★★☆</div><p>"Booked online in two minutes, checked in by the time my cab parked. Smooth and premium."</p><div className="who">— Amit D., Bengaluru</div></div>
+        </div>
+      </section>
+
       <section className="public-section" id="contact">
         <h2>Contact &amp; Location</h2>
         <div className="public-form">
@@ -110,7 +127,15 @@ export default function PublicHome() {
           ))}
           <a className="btn primary" href="#/booking">Book a room</a>
         </div>
+        <div className="map-wrap">
+          <iframe title="Hotel Laxmi Elite location" loading="lazy" referrerPolicy="no-referrer-when-downgrade"
+            src={`https://www.google.com/maps?q=${encodeURIComponent(s.hotel_address || 'Pune, Maharashtra, India')}&output=embed`} />
+        </div>
       </section>
+
+      <a className="wa-float" title="Chat on WhatsApp"
+        href={`https://wa.me/${String(s.hotel_phone || '+919876543210').replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hi ${s.hotel_name || 'Hotel Laxmi Elite'}! I would like to make an enquiry.`)}`}
+        target="_blank" rel="noreferrer">📲</a>
     </>
   );
 }
