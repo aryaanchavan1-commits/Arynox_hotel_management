@@ -8,7 +8,7 @@ export default function Settings() {
     hotel_name: 'Hotel Laxmi Elite', hotel_address: '', hotel_phone: '', tax_rate: '5',
     email: '', welcome_message: '', tagline: '', primary_color: '#4f46e5',
     about_text: '', footer_text: '', facilities_json: '[]', gallery_json: '[]', social_json: '{}',
-    razorpay_key_id: '', razorpay_key_secret: '', razorpay_webhook_secret: '', api_base_url: '',
+    razorpay_key_id: '', razorpay_key_secret: '', razorpay_webhook_secret: '', api_base_url: '', website_url: '',
   });
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
@@ -169,6 +169,10 @@ export default function Settings() {
           <h3 style={{ marginTop: 22 }}>🖥️ API base URL (optional)</h3>
           <p style={{ color: 'var(--muted)', margin: '4px 0 8px' }}>If you host the backend separately (e.g. Render), paste its URL here (e.g. <code>https://your-backend.onrender.com</code>). Leave blank to use this site's built-in API.</p>
           <input value={form.api_base_url} onChange={set('api_base_url')} placeholder="https://your-backend.onrender.com" />
+
+          <h3 style={{ marginTop: 22 }}>🌐 Website URL</h3>
+          <p style={{ color: 'var(--muted)', margin: '4px 0 8px' }}>Public hotel website address, used for the "Back to website" link on the staff login screen.</p>
+          <input value={form.website_url} onChange={set('website_url')} placeholder="https://your-website.vercel.app" />
 
           <div className="modal-actions">
             <button className="btn primary">💾 Save settings</button>

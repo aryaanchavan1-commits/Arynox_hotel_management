@@ -50,7 +50,8 @@ export default function Login({ onLogin }) {
           </button>
         </form>
         <p className="login-hint">Staff accounts: admin, reception, manager, kitchen, restaurant, housekeeping &middot; password: the username + "123"</p>
-        <a className="login-alt" href="#/">← Back to website</a>
+        const backHref = brand?.website_url || '#/';
+        <a className="login-alt" href={backHref} {...(backHref.startsWith('http') ? { target: '_blank', rel: 'noreferrer' } : {})}>← Back to website</a>
       </div>
     </div>
   );

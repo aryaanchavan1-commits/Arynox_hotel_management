@@ -61,7 +61,9 @@ export default function App() {
     );
   }
 
-  const isStaffArea = !publicOnly && seg[0] === 'staff';
+  // ERP deployment: every route belongs to the staff interface (login screen when no session).
+  // Website deployment: only public/guest routes; staff routes render the website home.
+  const isStaffArea = siteMode === 'erp' || seg[0] === 'staff';
   const staffKey = isStaffArea ? (seg[1] || 'dashboard') : '';
   const publicKey = isStaffArea ? '' : (seg[0] || 'home');
 
