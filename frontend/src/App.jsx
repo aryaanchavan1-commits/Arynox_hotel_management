@@ -42,7 +42,9 @@ export default function App() {
   const route = useHashRoute();
   const seg = route.split('/');
 
-  const isStaffArea = seg[0] === 'staff';
+  // On the public (Vercel) deployment the ERP is served exclusively by Render.
+  const publicOnly = process.env.NEXT_PUBLIC_SITE_MODE === 'public';
+  const isStaffArea = !publicOnly && seg[0] === 'staff';
   const staffKey = isStaffArea ? (seg[1] || 'dashboard') : '';
   const publicKey = isStaffArea ? '' : (seg[0] || 'home');
 

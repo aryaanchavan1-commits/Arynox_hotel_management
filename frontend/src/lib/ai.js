@@ -127,7 +127,7 @@ async function runTool(name, args) {
   }
 }
 
-const SYSTEM = `You are "Arynox_Hotel_ERP AI", the smart assistant of the Arynox_Hotel_ERP system (hotel + restaurant + POS).
+const SYSTEM = `You are "Hotel Laxmi Elite AI", the smart assistant of the Hotel Laxmi Elite ERP system (hotel + restaurant + POS).
 Answer hotel staff questions concisely using the tools when you need live data.
 If you have no answer, say so honestly. Keep answers short and friendly.
 IMPORTANT formatting rules:
@@ -169,4 +169,59 @@ export async function chat(message, client) {
     }
   }
   return { reply: 'I could not finish computing an answer. Please try again.' };
+}
+
+function buildSitePrompt(ctx) {
+  const rooms = (ctx.rooms || [])
+    .map((r) => `- ${r.name}: ${ctx.currency}${r.price}/night${r.amenities && r.amenities.length ? ' (amenities: ' + r.amenities.join(', ') + ')' : ''}`)
+    .join('\n');
+  const facilities = (ctx.facilities || []).map((f) => `- ${f.title || ''}: ${f.text || ''}`).join('\n');
+  const social = (ctx.social && Object.keys(ctx.social).length ? '\nSocial: ' + Object.entries(ctx.social).map(([k, v]) => `${k}: ${v}`).join(', ') : '');
+  return `You are the friendly website assistant of "${ctx.hotel_name || 'Hotel Laxmi Elite'}".
+Help website visitors with questions about the hotel, rooms, rates, amenities, booking, location and contact.
+ONLY answer using the hotel facts below. If the visitor asks something not covered, politely point them to the contact details provided.
+
+HOTEL FACTS:
+Name: ${ctx.hotel_name || 'Hotel Laxmi Elite'}
+Tagline: ${ctx.tagline || ''}
+Address: ${ctx.address || ''}
+Phone: ${ctx.phone || ''}
+Email: ${ctx.email || ''}
+Welcome message: ${ctx.welcome || ''}
+About: ${ctx.about || ''}
+Currency: ${ctx.currency || '₹'}
+
+ROOMS & RATES:
+${rooms || '(no room info available)'}
+
+FACILITIES:
+${facilities || '(no facility info available)'}${social}
+
+RULES:
+- Be warm, concise (under 120 words). Suggest the visitor book online (Rooms -> Book Now).
+- Do not mention that you are an AI, do not mention Groq or internal systems.
+- Do not answer anything unrelated to this hotel.`;
+}
+
+export async function websiteChat(message, history, ctx, client) {
+  const fallback = `Thank you for reaching out to ${ctx.hotel_name || 'Hotel Laxmi Elite'}!
+We would love to help. You can call us at ${ctx.phone || 'our front desk'} or email ${ctx.email || 'us'} for room rates, availability and bookings. For instant booking, visit the Rooms section and click "Book now".`;
+  if (!client) return { reply: fallback };
+  const messages = [
+    { role: 'system', content: buildSitePrompt(ctx) },
+    ...(Array.isArray(history) ? history : []),
+    { role: 'user', content: message },
+  ];
+  try {
+    const res = await client.chat.completions.create({
+      model: MODEL,
+      messages,
+      temperature: 0.4,
+      max_tokens: 300,
+    });
+    return { reply: res.choices[0]?.message?.content || fallback };
+  } catch (e) {
+    console.error('[public-chat]', e.message);
+    return { reply: fallback };
+  }
 }

@@ -1,6 +1,5 @@
-import React, { useEffect, useState, Suspense, lazy } from 'react';
+import React, { useEffect, useState } from 'react';
 import { get } from '../api.js';
-const ThreeHero = lazy(() => import('../components/ThreeHero.jsx'));
 
 export default function PublicHome() {
   const [data, setData] = useState(null);
@@ -20,8 +19,9 @@ export default function PublicHome() {
 
   return (
     <>
-      <section className="public-hero" style={{ position: 'relative', overflow: 'hidden' }}>
-        <Suspense fallback={null}><ThreeHero color={s.primary_color || '#fff'} /></Suspense>
+      <section className="public-hero photo" style={{ position: 'relative', overflow: 'hidden' }}>
+        <img className="hero-bg" src="/images/hotel_Lakshmi1.webp" alt={s.hotel_name || 'Hotel Laxmi Elite'} />
+        <div className="hero-overlay" />
         <div className="hero-inner">
           <h1>{s.welcome_message || `Welcome to ${s.hotel_name || 'Hotel Laxmi Elite'}`}</h1>
           <p className="tag">{s.tagline || 'Luxury · Dining · Celebration'}</p>
@@ -69,7 +69,10 @@ export default function PublicHome() {
       {s.about_text && (
         <section className="public-section about">
           <h2>About {s.hotel_name || 'Us'}</h2>
-          <p className="about-text">{s.about_text}</p>
+          <div className="about-wrap">
+            <img className="about-img" src="/images/hotel_Lakshmi.webp" alt={s.hotel_name || 'Hotel Laxmi Elite'} />
+            <p className="about-text">{s.about_text}</p>
+          </div>
         </section>
       )}
 
@@ -86,6 +89,8 @@ export default function PublicHome() {
       <section className="public-section" id="gallery">
         <h2>Gallery</h2>
         <div className="gallery">
+          <div className="tile photo"><img src="/images/hotel_Lakshmi1.webp" alt="Hotel Laxmi Elite" /><span>Hotel Exterior</span></div>
+          <div className="tile photo"><img src="/images/hotel_Lakshmi.webp" alt="Hotel Laxmi Elite" /><span>Welcome to Laxmi Elite</span></div>
           {gallery.map((g) => (
             <div className="tile" key={g.label} style={{ background: g.color }}>{g.emoji}<span>{g.label}</span></div>
           ))}

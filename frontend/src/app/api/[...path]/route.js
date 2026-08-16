@@ -3,7 +3,7 @@ import { db, getSettings, ensureReady } from '@/lib/db';
 import { signToken, verifyToken, hash, SALT, isGuestToken, isStaffToken } from '@/lib/auth';
 import { ROLES } from '@/lib/roles';
 import { buildEscPos, htmlReceipt } from '@/lib/receipt';
-import { chat } from '@/lib/ai';
+import { chat, websiteChat } from '@/lib/ai';
 import { Groq } from 'groq-sdk';
 import https from 'node:https';
 import crypto from 'node:crypto';
@@ -38,6 +38,12 @@ async function handle(req, params) {
   const url = new URL(req.url);
   const path = segs(params.path);
   const method = req.method;
+
+  // public mode: this deployment only serves the public website (booking, guest, payments, health).
+  // Staff/ERP API surface stays exclusively on the Render deployment.
+  if (process.env.SITE_MODE === 'public' && !['health', 'public', 'guest', 'payments'].includes(path[0])) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
 
   // public endpoints
   if (path[0] === 'health' && method === 'GET') {
@@ -78,6 +84,32 @@ async function handle(req, params) {
       social,
       roomTypes: types,
     });
+  }
+  if (path[0] === 'public' && path[1] === 'chat' && method === 'POST') {
+    const b = await body(req);
+    const msg = String(b.message || '').trim().slice(0, 500);
+    if (!msg) return NextResponse.json({ reply: 'Please type a question about the hotel, rooms, facilities or how to book.' });
+    try { await ensureReady(); } catch (e) { return NextResponse.json({ error: 'Database unavailable, retrying…' }, { status: 503 }); }
+    const s = await getSettings();
+    let facilities = []; try { facilities = JSON.parse(s.facilities_json || '[]'); } catch {}
+    let social = {}; try { social = JSON.parse(s.social_json || '{}'); } catch {}
+    const types = (await db.execute('SELECT name, price, description, amenities FROM room_types ORDER BY price')).rows.map((t) => ({
+      name: t.name, price: Number(t.price), description: t.description || '',
+      amenities: (t.amenities || '').split(',').map((x) => x.trim()).filter(Boolean),
+    }));
+    const key = process.env.GROQ_API_KEY;
+    const client = key ? new Groq({ apiKey: key }) : null;
+    const ctx = {
+      hotel_name: s.hotel_name, tagline: s.tagline, address: s.hotel_address, phone: s.hotel_phone,
+      email: s.email || '', welcome: s.welcome_message, about: s.about_text, currency: s.currency_symbol,
+      facilities, social, rooms: types,
+    };
+    const history = (Array.isArray(b.history) ? b.history : [])
+      .filter((h) => h && ['user', 'assistant'].includes(h.role) && typeof h.text === 'string' && h.text.length <= 500)
+      .slice(-6)
+      .map((h) => ({ role: h.role === 'assistant' ? 'assistant' : 'user', content: h.text }));
+    const result = await websiteChat(msg, history, ctx, client);
+    return NextResponse.json(result);
   }
   if (path[0] === 'public' && path[1] === 'bookings' && method === 'POST') {
     const b = await body(req);

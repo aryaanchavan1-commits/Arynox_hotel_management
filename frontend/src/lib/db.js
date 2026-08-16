@@ -299,6 +299,7 @@ async function seed() {
   await db.execute(ensureSetting('razorpay_key_secret', ''));
   await db.execute(ensureSetting('razorpay_webhook_secret', ''));
   await db.execute(ensureSetting('api_base_url', ''));
+  await db.execute("UPDATE users SET name='Hotel Laxmi Elite Admin' WHERE username='admin' AND name='Arynox Admin'");
 }
 
 let ready = false;

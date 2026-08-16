@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { get } from '../api.js';
+import ChatWidget from './ChatWidget.jsx';
+
+const publicOnly = process.env.NEXT_PUBLIC_SITE_MODE === 'public';
 
 export default function PublicLayout({ guest, onGuestLogout, children }) {
   const route = location.hash.replace('#/', '') || 'home';
@@ -21,6 +24,8 @@ export default function PublicLayout({ guest, onGuestLogout, children }) {
 
   const name = brand?.hotel_name || 'Hotel';
   const short = name.replace(/_(hotel|hotels?|resort|inn)/gi, '');
+  const erpUrl = brand?.api_base_url || '#/staff/login';
+  const erpProps = erpUrl.startsWith('http') ? { href: erpUrl, target: '_blank', rel: 'noreferrer' } : { href: erpUrl };
 
   const links = [
     ['home', 'Home'],
@@ -62,11 +67,12 @@ export default function PublicLayout({ guest, onGuestLogout, children }) {
         <p style={{ marginTop: 4 }}>📞 {brand?.hotel_phone || '+91 98765 43210'}{brand?.email ? ` · ✉️ ${brand.email}` : ''}</p>
         <div style={{ marginTop: 8, display: 'flex', gap: 14, justifyContent: 'center' }}>
           <a className="link" href="#/guest/login">Guest sign in</a> ·{' '}
-          <a className="link" href="#/staff/login">Staff sign in</a>
+          <a className="link" {...(publicOnly ? erpProps : { href: '#/staff/login' })}>Staff sign in</a>
         </div>
         <p style={{ marginTop: 8, fontSize: 12, color: '#8b93ad' }}>{brand?.footer_text || `${name}. All rights reserved.`}</p>
       </footer>
-      <a href="#/staff/login" className="staff-float" title="Staff / ERP login">🏨 ERP</a>
+      <a className="staff-float" title="Staff / ERP login" {...(publicOnly ? erpProps : { href: '#/staff/login' })}>🏨 ERP</a>
+      <ChatWidget brand={brand} />
     </div>
   );
 }
