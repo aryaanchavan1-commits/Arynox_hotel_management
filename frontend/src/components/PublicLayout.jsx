@@ -1,8 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { get } from '../api.js';
 import ChatWidget from './ChatWidget.jsx';
+import { UnifiedCartProvider, useUnifiedCart } from '../context/UnifiedCartContext.jsx';
 
-export default function PublicLayout({ guest, onGuestLogout, children }) {
+function CartButton({ route }) {
+  const { hasItems, total, food, rooms } = useUnifiedCart();
+  const count = food.reduce((a, f) => a + (f.qty || 1), 0) + rooms.length;
+  if (!hasItems) return null;
+
+  return (
+    <a href="#/unified-checkout" className="cart-fab" aria-label="View cart">
+      <span className="cart-icon">🛒</span>
+      {count > 0 && <span className="cart-badge">{count}</span>}
+      <span className="cart-total">₹{Number(total).toLocaleString('en-IN')}</span>
+    </a>
+  );
+}
+
+function PublicLayoutInner({ guest, onGuestLogout, children }) {
   const route = location.hash.replace('#/', '') || 'home';
   const [open, setOpen] = useState(false);
   const [dark, setDark] = useState(() => (localStorage.getItem('arynox_theme') || 'light') === 'dark');
@@ -25,14 +40,14 @@ export default function PublicLayout({ guest, onGuestLogout, children }) {
     }).catch(() => {});
   }, []);
 
-  const name = brand?.hotel_name || 'Hotel Lakshmi Deluxe';
+  const name = brand?.hotel_name || 'Hotel Lakshmi Elite';
   const short = name.replace(/_(hotel|hotels?|resort|inn)/gi, '');
 
   const links = [
     ['home', 'Home'],
     ['rooms', 'Rooms'],
-    ['booking', 'Book Now'],
-    ['restaurant', 'Restaurant'],
+    ['booking', 'Book Stay'],
+    ['restaurant', 'Dining'],
     ['venue', 'Venue Hall'],
     ['contact', 'Contact'],
   ];
@@ -48,6 +63,7 @@ export default function PublicLayout({ guest, onGuestLogout, children }) {
           {links.map(([key, label]) => (
             <a key={key} href={`#/${key}`} className={route === key || (key === 'home' && !['rooms', 'booking', 'restaurant', 'venue', 'contact'].includes(route)) ? 'active' : ''}>{label}</a>
           ))}
+          <CartButton route={route} />
           {guest ? (
             <div className="guest-bar">
               <span className="hello">Hi, {guest.name}</span>
@@ -70,7 +86,7 @@ export default function PublicLayout({ guest, onGuestLogout, children }) {
         <h4 style={{ fontSize: 20, margin: '18px 0 4px', fontWeight: 600 }}>Contact</h4>
         <div className="hm-footer-grid">
           <div className="hm-footer-col">
-            <p>{brand?.hotel_address || 'Near Rajwadu Resort, Mumbai-Pune Expressway, Pune, India'}</p>
+            <p>{brand?.hotel_address || 'Narayanwadi, Pachwad Phata, Karad - 415539'}</p>
             <p>📞 {brand?.hotel_phone || '+91 98765 43210'}</p>
             {brand?.email && <p>✉️ {brand.email}</p>}
           </div>
@@ -81,7 +97,7 @@ export default function PublicLayout({ guest, onGuestLogout, children }) {
           </div>
           <div className="hm-footer-col">
             <p><a className="link" href="#/restaurant">Dining Experience</a></p>
-            <p><a className="link" href="#/venue">Events &amp; Functions</a></p>
+            <p><a className="link" href="#/venue">Events & Functions</a></p>
             <p><a className="link" href="#/booking">Book a Room</a></p>
           </div>
         </div>
@@ -90,5 +106,13 @@ export default function PublicLayout({ guest, onGuestLogout, children }) {
       </footer>
       <ChatWidget brand={brand} />
     </div>
+  );
+}
+
+export default function PublicLayout({ guest, onGuestLogout, children }) {
+  return (
+    <UnifiedCartProvider>
+      <PublicLayoutInner guest={guest} onGuestLogout={onGuestLogout} children={children} />
+    </UnifiedCartProvider>
   );
 }

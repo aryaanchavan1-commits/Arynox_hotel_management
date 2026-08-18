@@ -22,10 +22,10 @@ export default function RestaurantHome() {
   return (
     <>
       <section className="restaurant-hero">
-        <h1>{s.restaurant_about ? 'Aadhya Restaurant' : 'Aadhya Restaurant'}</h1>
-        <p className="tag">Multi-cuisine dining · Craft cocktails · {s.hotel_name || 'Hotel Lakshmi Deluxe'}</p>
+        <h1>{s.hotel_name || 'Hotel Lakshmi Elite'} Restaurant</h1>
+        <p className="tag">Pure-vegetarian dining · {s.hotel_name || 'Hotel Lakshmi Elite'}</p>
         <div className="hero-actions">
-          <a href="#/booking" className="btn primary">Book a Table</a>
+          <a href="#/restaurant-booking" className="btn primary">Book a Table</a>
           <a href="#/contact" className="btn ghost">Visit Us</a>
         </div>
       </section>
@@ -52,8 +52,8 @@ export default function RestaurantHome() {
       </section>
 
       <section className="public-section about">
-        <h2>About Aadhya</h2>
-        <p className="about-text">{s.restaurant_about || 'A signature multi-cuisine restaurant with a rooftop lounge, craft cocktails and warm Indian hospitality — the perfect setting for family dinners, celebrations and business lunches.'}</p>
+        <h2>About Our Restaurant</h2>
+        <p className="about-text">{s.restaurant_about || 'A pure-vegetarian restaurant serving Indian and local Maharashtrian favourites — family dinners, birthdays and weekend food plans, with polite service and budget-friendly bills.'}</p>
       </section>
     </>
   );

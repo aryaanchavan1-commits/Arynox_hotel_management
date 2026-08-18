@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { get } from './api.js';
 import Layout from './components/Layout.jsx';
 import PublicLayout from './components/PublicLayout.jsx';
 import RestaurantLayout from './components/RestaurantLayout.jsx';
 import { ToastProvider } from './components/Toast.jsx';
+import { Toaster } from './components/ui/Toaster';
+import { TooltipProvider } from './components/ui/Tooltip';
 import { ROLE_MODULES } from './lib/roles.js';
 import Dashboard from './views/Dashboard.jsx';
 import Rooms from './views/Rooms.jsx';
@@ -26,10 +29,13 @@ import GuestSignup from './views/GuestSignup.jsx';
 import GuestLogin from './views/GuestLogin.jsx';
 import GuestMyBookings from './views/GuestMyBookings.jsx';
 import PublicRestaurant from './views/PublicRestaurant.jsx';
+import RestaurantBooking from './views/RestaurantBooking.jsx';
 import PublicVenue from './views/PublicVenue.jsx';
 import Venue from './views/Venue.jsx';
 import ChannelManager from './views/ChannelManager.jsx';
 import Website from './views/Website.jsx';
+import UnifiedCheckout from './views/UnifiedCheckout.jsx';
+import Search from './views/Search.jsx';
 
 function useHashRoute() {
   const [route, setRoute] = useState(() => location.hash.replace('#/', '') || '');
@@ -47,10 +53,17 @@ export default function App() {
   const [user, setUser] = useState(() => JSON.parse(localStorage.getItem('arynox_user') || 'null'));
   const [guest, setGuest] = useState(() => JSON.parse(localStorage.getItem('arynox_guest_user') || 'null'));
   const [confirm, setConfirm] = useState(null);
+  const [staffLogin, setStaffLogin] = useState(true);
   const route = useHashRoute();
   const seg = route.split('/');
 
   const siteMode = getSiteMode();
+
+  useEffect(() => {
+    if (siteMode === 'erp' && !user) {
+      get('/public/hotels').then((d) => setStaffLogin(!!d?.settings?.staff_login_enabled)).catch(() => {});
+    }
+  }, [siteMode]);
 
   // hotel + restaurant + venue all live on the public website (merged single site)
 
@@ -60,10 +73,12 @@ export default function App() {
   const staffKey = isStaffArea ? (seg[1] || 'dashboard') : '';
   const publicKey = isStaffArea ? '' : (seg[0] || 'home');
 
+  // ERP login page shows only when the hotel enables staff sign-in
+  const effectiveUser = user || (staffLogin ? null : { username: 'admin', name: 'Administrator', role: 'admin' });
   // staff logged in + visited a staff area -> show ERP
-  const showErp = user && isStaffArea;
+  const showErp = effectiveUser && isStaffArea;
   // staff area without a session -> staff login screen
-  const showStaffLogin = !user && isStaffArea;
+  const showStaffLogin = !effectiveUser && isStaffArea;
   // public site routes (guest or anonymous)
   const publicRoutes = {
     home: <PublicHome />,
@@ -71,20 +86,23 @@ export default function App() {
     booking: <PublicBooking setConfirm={setConfirm} />,
     confirm: <PublicConfirm confirm={confirm} setConfirm={setConfirm} />,
     restaurant: <PublicRestaurant />,
+    'restaurant-booking': <RestaurantBooking />,
     venue: <PublicVenue />,
+    'unified-checkout': <UnifiedCheckout setConfirm={setConfirm} />,
     'guest/login': <GuestLogin onLogin={setGuest} />,
     'guest/signup': <GuestSignup onLogin={setGuest} />,
-    'guest/my-bookings': <GuestMyBookings guest={guest} onLogout={() => { localStorage.removeItem('arynox_guest_token'); localStorage.removeItem('arynox_guest_user'); setGuest(null); }} />,
+    'guest/my-bookings': guest ? <GuestMyBookings guest={guest} onLogout={() => { localStorage.removeItem('arynox_guest_token'); localStorage.removeItem('arynox_guest_user'); setGuest(null); }} /> : <PublicHome />,
     contact: <PublicHome />,
   };
 
   const staffPages = {
     dashboard: <Dashboard />,
+    search: <Search />,
     rooms: <Rooms />,
     availability: <Availability />,
     bookings: <Bookings />,
     guests: <Guests />,
-    users: <Users user={user} />,
+    users: <Users user={effectiveUser} />,
     restaurant: <Restaurant />,
     kitchen: <Kitchen />,
     housekeeping: <Housekeeping />,
@@ -113,14 +131,17 @@ export default function App() {
   }
 
   // staff ERP
-  const mods = user ? ROLE_MODULES[user.role] || [] : [];
+  const mods = effectiveUser ? ROLE_MODULES[effectiveUser.role] || [] : [];
   const allowedKey = mods.includes(staffKey) ? staffKey : (mods[0] || 'dashboard');
   const page = staffPages[allowedKey] || <Dashboard />;
   return (
-    <Layout user={user}>
-      <ToastProvider>
-        {page}
-      </ToastProvider>
-    </Layout>
+    <TooltipProvider>
+      <Toaster position="bottom-right" />
+      <Layout user={effectiveUser}>
+        <ToastProvider>
+          {page}
+        </ToastProvider>
+      </Layout>
+    </TooltipProvider>
   );
 }

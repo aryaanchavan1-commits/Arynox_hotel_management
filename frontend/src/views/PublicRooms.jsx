@@ -39,7 +39,10 @@ export default function PublicRooms() {
         <form className="public-search" onSubmit={search}>
           <div><label>Check-in</label><input type="date" name="ci" required /></div>
           <div><label>Check-out</label><input type="date" name="co" required /></div>
-          <div><label>Guests</label><input type="number" name="adults" min="1" max="10" defaultValue="2" /></div>
+          <div><label>Guests</label><select name="adults" defaultValue="2">
+            {[1, 2, 3, 4, 5, 6].map((n) => <option key={n} value={n}>{n} {n === 1 ? 'Guest' : 'Guests'}</option>)}
+            <option value="7">7+ Guests</option>
+          </select></div>
           <button className="btn primary" disabled={searching}>{searching ? 'Checking…' : 'Check availability'}</button>
         </form>
       </section>

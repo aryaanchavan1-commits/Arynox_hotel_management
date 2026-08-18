@@ -1,23 +1,34 @@
 import React, { useEffect, useState } from 'react';
 import { get, post } from '../api.js';
+import { useUnifiedCart } from '../context/UnifiedCartContext.jsx';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
+import { Separator } from '@/components/ui/Separator';
+import { useToast } from '@/hooks/useToast';
+
+const fileToBase64 = (file) => new Promise((res) => {
+  const r = new FileReader();
+  r.onload = () => res(r.result.split(',')[1]);
+  r.readAsDataURL(file);
+});
 
 export default function PublicBooking({ setConfirm }) {
-  const fileToBase64 = (file) => new Promise((res) => {
-    const r = new FileReader();
-    r.onload = () => res(r.result.split(',')[1]);
-    r.readAsDataURL(file);
-  });
-
+  const { rooms, addRoom, removeRoom, updateRoom, food, total, roomTotal, foodTotal, setDates, clear } = useUnifiedCart();
+  const { toast } = useToast();
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [results, setResults] = useState(null);
   const [searching, setSearching] = useState(false);
   const [selected, setSelected] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({ name: '', phone: '', email: '', id_type: 'passport', id_number: '', address: '' });
   const [idProof, setIdProof] = useState({ file: null, preview: null, error: '' });
   const [payNow, setPayNow] = useState(false);
   const [savedGuest, setSavedGuest] = useState(() => JSON.parse(localStorage.getItem('arynox_guest_user') || 'null'));
+  const [inq, setInq] = useState({ name: '', phone: '', email: '', check_in: '', check_out: '', notes: '' });
+  const [inqBusy, setInqBusy] = useState(false);
+  const [inqDone, setInqDone] = useState('');
 
   useEffect(() => {
     get('/public/hotels').then(setData).catch((e) => setError(e.message));
@@ -46,7 +57,6 @@ export default function PublicBooking({ setConfirm }) {
     }
   }, [payNow]);
 
-
   const s = data?.settings || {};
 
   async function search(e) {
@@ -62,68 +72,86 @@ export default function PublicBooking({ setConfirm }) {
       const r = await get(`/availability?check_in=${ci}&check_out=${co}&adults=${adults}`);
       setResults(r);
       setSelected(null);
+      setDates({ checkIn: ci, checkOut: co, adults: Number(adults) });
     } catch (e2) { setError(e2.message); }
     setSearching(false);
   }
 
-  async function submit(e) {
+  function addToUnifiedCart() {
+    if (!selected) return;
+    addRoom({
+      roomTypeId: selected.id,
+      name: selected.name,
+      price: selected.price,
+      checkIn: results.check_in,
+      checkOut: results.check_out,
+      nights: results.nights,
+      adults: results.adults,
+      image: selected.image,
+    });
+    toast.success(`${selected.name} added to cart`);
+    location.hash = '#/unified-checkout';
+  }
+
+  async function submitInquiry(e) {
     e.preventDefault();
-    if (!selected) return setError('Pick a room type');
-    if (!form.name || !form.phone) return setError('Name and phone are required');
-    let proof = null;
-    if (idProof.file) {
-      if (!idProof.file.type.startsWith('image/')) return setError('ID proof must be an image (jpg/png)');
-      if (idProof.file.size > 2 * 1024 * 1024) return setError('ID proof image must be under 2MB');
-      proof = await fileToBase64(idProof.file);
-    }
-    setSubmitting(true);
+    if (!inq.name.trim() || !inq.phone.trim()) return setError('Name and phone are required for a callback');
+    setInqBusy(true);
     setError('');
     try {
-      const r = await post('/public/bookings', {
-        room_type_id: selected.id,
-        check_in: results.check_in,
-        check_out: results.check_out,
-        adults: results.adults,
-        children: 0,
-        ...form,
-        id_proof_base64: proof || '',
-        id_proof_name: idProof.file ? idProof.file.name : '',
-        id_proof_mime: idProof.file ? idProof.file.type : '',
-        pay_now: false,
-      });
-      if (payNow && r.bookingId) {
-        const sess = await post('/payments/create-order', { booking_id: r.bookingId, currency: 'INR' }).catch(() => null);
-        if (sess && sess.order_id && window.Razorpay) {
-          window.Razorpay.open({
-            key: sess.key_id,
-            order_id: sess.order_id,
-            amount: sess.amount,
-            currency: sess.currency,
-            name: s.hotel_name || 'Hotel',
-            description: `Booking ${r.reference}`,
-            handler: () => { setConfirm({ ...r, payment_status: 'paid' }); location.hash = '#/confirm'; },
-            modal: { onClose: () => { setConfirm({ ...r, payment_status: 'paid' }); location.hash = '#/confirm'; } },
-          });
-          return;
-        }
-      }
-      setConfirm(r);
-      location.hash = '#/confirm';
-    } catch (e2) { setError(e2.message); }
-    setSubmitting(false);
+      await post('/public/inquiries', inq);
+      setInqDone(`Thank you ${inq.name}! The hotel team will call you back at ${inq.phone} shortly.`);
+      setInq({ name: '', phone: '', email: '', check_in: '', check_out: '', notes: '' });
+      toast.success('Inquiry received — we will call you back');
+    } catch (err) {
+      setError(err.message || 'Could not submit the inquiry');
+      toast.error(err.message || 'Inquiry failed');
+    }
+    setInqBusy(false);
   }
 
   return (
     <>
       <section className="public-section" style={{ marginTop: 8 }}>
         <h2>Book your stay</h2>
-        <p className="sub">Find a room and confirm your reservation</p>
+        <p className="sub">Find a room and add to your combined cart</p>
         {error && <div className="msg err">{error}</div>}
         <form className="public-search" onSubmit={search}>
           <div><label>Check-in</label><input type="date" name="ci" required /></div>
           <div><label>Check-out</label><input type="date" name="co" required /></div>
-          <div><label>Guests</label><input type="number" name="adults" min="1" max="10" defaultValue="2" /></div>
+          <div><label>Guests</label>
+            <select name="adults" defaultValue="2">
+              {[1, 2, 3, 4, 5, 6].map((n) => <option key={n} value={n}>{n} {n === 1 ? 'Guest' : 'Guests'}</option>)}
+              <option value="7">7+ Guests</option>
+            </select>
+          </div>
           <button className="btn primary" disabled={searching}>{searching ? 'Checking…' : 'Search'}</button>
+        </form>
+      </section>
+
+      <section className="public-section" style={{ background: 'linear-gradient(135deg, #1a1a2e, #16213e)', border: '2px solid rgba(212, 175, 55, .35)', borderRadius: 18 }}>
+        <h2 style={{ color: '#d4af37' }}>📞 Need help? Request a callback</h2>
+        <p className="sub" style={{ color: '#c9c9d8' }}>
+          Not sure what to book? Leave your number — the hotel team will call you back and handle everything (special rates, group bookings, long stays).
+        </p>
+        {inqDone && <div className="msg ok" style={{ margin: '12px 0' }}>{inqDone}</div>}
+        <form className="call-card-form" onSubmit={submitInquiry}>
+          <div><label>Your name *</label><input value={inq.name} onChange={(e) => setInq({ ...inq, name: e.target.value })} placeholder="Full name" /></div>
+          <div><label>Phone *</label><input type="tel" value={inq.phone} onChange={(e) => setInq({ ...inq, phone: e.target.value })} placeholder="+91 98765 43210" /></div>
+          <div><label>Email (optional)</label><input type="email" value={inq.email} onChange={(e) => setInq({ ...inq, email: e.target.value })} placeholder="you@example.com" /></div>
+          <div><label>Tentative dates (optional)</label>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input type="date" value={inq.check_in} onChange={(e) => setInq({ ...inq, check_in: e.target.value })} />
+              <input type="date" value={inq.check_out} onChange={(e) => setInq({ ...inq, check_out: e.target.value })} />
+            </div>
+          </div>
+          <div style={{ gridColumn: '1 / -1' }}>
+            <label>Notes (optional)</label>
+            <textarea value={inq.notes} onChange={(e) => setInq({ ...inq, notes: e.target.value })} rows="2" placeholder="e.g. we need 2 rooms for a family wedding, ground floor, early check-in…" />
+          </div>
+          <button className="call-card-btn" disabled={inqBusy} style={{ gridColumn: '1 / -1' }}>
+            {inqBusy ? 'Sending…' : '📞 Call me back'}
+          </button>
         </form>
       </section>
 
@@ -133,15 +161,17 @@ export default function PublicBooking({ setConfirm }) {
           <p className="sub">{results.nights} night(s) · {results.adults} guest(s)</p>
           <div className="room-cards">
             {results.roomTypes.filter((t) => t.freeCount > 0).map((t) => (
-              <div key={t.id} className={`room-card-public${selected?.id === t.id ? '' : ''}`} style={{ cursor: 'pointer', border: selected?.id === t.id ? '2px solid var(--primary)' : '1px solid var(--line)' }}
+              <div key={t.id} className="room-card-public" style={{ cursor: 'pointer', border: selected?.id === t.id ? '2px solid var(--hm-primary)' : '1px solid #f0ede2' }}
                 onClick={() => setSelected({ ...t, nights: results.nights })}>
-                <div className="img">🛏️</div>
+                <img className="room-card-img" src={t.image || '/images/hotel/room-deluxe.jpg'} alt={t.name} onError={(e)=>e.target.style.display='none'} />
                 <div className="body">
                   <div className="name">{t.name}</div>
                   <div className="price">{s.currency_symbol || '₹'}{t.price} <small>/ night</small></div>
                   <div style={{ fontSize: 12, color: 'var(--muted)' }}>Up to {t.capacity} guests · {t.freeCount} free</div>
                   <div className="price" style={{ marginTop: 4 }}>Total: {s.currency_symbol || '₹'}{t.total}</div>
-                  <span className="btn primary" style={{ textAlign: 'center' }}>{selected?.id === t.id ? '✓ Selected' : 'Select'}</span>
+                  <span className="hm-book-btn" style={{ display: 'block', marginTop: 12, textAlign: 'center' }}>
+                    {selected?.id === t.id ? '✓ Selected' : 'Select'}
+                  </span>
                 </div>
               </div>
             ))}
@@ -152,67 +182,46 @@ export default function PublicBooking({ setConfirm }) {
 
       {selected && results && (
         <section className="public-section">
-          <h2>Guest details</h2>
-          <form className="public-form" onSubmit={submit}>
-            <div className="form-grid">
-              <div className={savedGuest ? 'full' : ''}>
-                <label>Full name *</label>
-                <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Riya Sharma" required />
-              </div>
-              <div>
-                <label>Phone *</label>
-                <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+91 …" required />
-              </div>
-              <div>
-                <label>Email</label>
-                <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="you@email.com" />
-              </div>
-              <div>
-                <label>ID type</label>
-                <select value={form.id_type} onChange={(e) => setForm({ ...form, id_type: e.target.value })}>
-                  <option value="passport">Passport</option>
-                  <option value="aadhar">Aadhaar</option>
-                  <option value="driving_license">Driving license</option>
-                  <option value="pan">PAN</option>
-                </select>
-              </div>
-              <div>
-                <label>ID number</label>
-                <input value={form.id_number} onChange={(e) => setForm({ ...form, id_number: e.target.value })} />
-              </div>
-              <div className="full">
-                <label>Address</label>
-                <textarea rows="2" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
-              </div>
-              <div className="full">
-                <label>ID proof (passport / license / Aadhaar) — optional image</label>
-                <input type="file" accept="image/*" onChange={(e) => {
-                  const f = e.target.files[0];
-                  if (!f) return;
-                  if (!f.type.startsWith('image/')) return setIdProof({ file: null, preview: null, error: 'Must be an image (jpg/png)' });
-                  if (f.size > 2 * 1024 * 1024) return setIdProof({ file: null, preview: null, error: 'Image must be under 2MB' });
-                  const r = new FileReader();
-                  r.onload = () => setIdProof({ file: f, preview: r.result, error: '' });
-                  r.readAsDataURL(f);
-                }} />
-                {idProof.error && <div className="msg err" style={{ marginTop: 8 }}>{idProof.error}</div>}
-                {idProof.preview && <img src={idProof.preview} alt="preview" style={{ maxWidth: '100%', borderRadius: 8, marginTop: 8, maxHeight: 120, objectFit: 'cover' }} />}
+          <h2>Add to Cart</h2>
+          <div className="unified-checkout" style={{maxWidth: '600px'}}>
+            <div className="section">
+              <div className="section-title">🏨 Selected Room</div>
+              <div className="item">
+                <img className="item-img" src={selected.image || '/images/hotel/room-deluxe.jpg'} alt={selected.name} onError={(e)=>e.target.style.display='none'} />
+                <div className="item-info">
+                  <div className="item-name">{selected.name}</div>
+                  <div className="item-meta">
+                    {results.nights} night{results.nights>1?'s':''} · {results.adults} guest{results.adults>1?'s':''}
+                    · {results.check_in} → {results.check_out}
+                  </div>
+                </div>
+                <div className="item-price">₹{Number(selected.total).toLocaleString('en-IN')}</div>
               </div>
             </div>
-            <button className="btn green" style={{ marginTop: 16, width: '100%' }} disabled={submitting}>
-              {submitting ? 'Booking…' : `Confirm booking — ${s.currency_symbol || '₹'}${selected.total}`}
-            </button>
-            {s.payments_enabled ? (
-              <label className="login-check" style={{ marginTop: 8 }}>
-                <input type="checkbox" checked={payNow} onChange={(e) => setPayNow(e.target.checked)} /> Pay now with card/UPI (Razorpay)
-              </label>
-            ) : (
-              <p className="sub" style={{ textAlign: 'center', marginTop: 8, fontSize: 12 }}>You can pay online (card/UPI) once online payments are enabled.</p>
+
+            {food.length > 0 && (
+              <Card className="summary-card" style={{marginTop: 16}}>
+                <CardHeader><CardTitle>🍽️ Also in Cart</CardTitle></CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="summary-row"><span>Dining ({food.reduce((a,f)=>a+f.qty,0)} items)</span><span>₹{Number(foodTotal).toLocaleString('en-IN')}</span></div>
+                  <div className="summary-row total"><span>Combined Total</span><span>₹{Number(total).toLocaleString('en-IN')}</span></div>
+                </CardContent>
+              </Card>
             )}
-            <p className="sub" style={{ textAlign: 'center', marginTop: 10, fontSize: 12 }}>
-              {savedGuest ? `Signed in as ${savedGuest.name} — your booking will be linked to your account.` : 'Sign in with your guest account to manage bookings later.'}
+
+            <div style={{marginTop: 16, display: 'flex', gap: 12, flexWrap: 'wrap'}}>
+              <Button className="hm-btn hm-btn-primary" size="lg" style={{flex: 1, minWidth: 200}} onClick={addToUnifiedCart}>
+                Add to Cart & Continue to Checkout
+              </Button>
+              <Button className="hm-btn hm-btn-outline" size="lg" style={{flex: 1, minWidth: 200}} onClick={() => setSelected(null)}>
+                Change Room
+              </Button>
+            </div>
+
+            <p style={{textAlign: 'center', fontSize: 13, color: 'var(--muted)', marginTop: 12}}>
+              Your room will be saved in the unified cart. You can add dining items from <a href="#/restaurant" style={{color: 'var(--hm-primary)', fontWeight: 600}}>Restaurant</a> and checkout everything together.
             </p>
-          </form>
+          </div>
         </section>
       )}
     </>

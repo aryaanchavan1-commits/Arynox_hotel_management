@@ -23,13 +23,13 @@ export default function RestaurantLayout({ children }) {
     }).catch(() => {});
   }, []);
 
-  const name = brand?.hotel_name || 'Hotel Lakshmi Deluxe';
+  const name = brand?.hotel_name || 'Hotel Lakshmi Elite';
   const links = [
     ['menu', 'Menu'],
-    ['booking', 'Book a Table'],
+    ['restaurant-booking', 'Book a Table'],
     ['contact', 'Contact'],
   ];
-  const active = (key) => route === key || (key === 'menu' && !['booking', 'contact'].includes(route));
+  const active = (key) => route === key || (key === 'menu' && !['restaurant-booking', 'contact'].includes(route));
 
   return (
     <div className="public restaurant-site">
@@ -43,15 +43,15 @@ export default function RestaurantLayout({ children }) {
             <a key={key} href={`#/${key}`} className={active(key) ? 'active' : ''}>{label}</a>
           ))}
           <a href="#/guest/login">Sign in</a>
-          <a href="#/booking" className="btn">Book a Table</a>
+          <a href="#/restaurant-booking" className="btn">Book a Table</a>
         </nav>
         <button className="public-theme" onClick={toggleDark} aria-label="Toggle theme">{dark ? '☀️' : '🌙'}</button>
         <button className="public-hamburger" onClick={() => setOpen(!open)} aria-label="Menu">☰</button>
       </header>
       <main className="public-main">{children}</main>
       <footer className="public-footer">
-        <div className="big">🍽️ Aadhya Restaurant · {name}</div>
-        <p style={{ marginTop: 6 }}>{brand?.hotel_address || 'Near Rajwadu Resort, Mumbai-Pune Expressway, Pune, India'}</p>
+        <div className="big">🍽️ {name} · Restaurant</div>
+        <p style={{ marginTop: 6 }}>{brand?.hotel_address || 'Narayanwadi, Pachwad Phata, Karad - 415539'}</p>
         <p style={{ marginTop: 4 }}>📞 {brand?.hotel_phone || '+91 98765 43210'}{brand?.email ? ` · ✉️ ${brand.email}` : ''}</p>
         <p style={{ marginTop: 4 }}>🕐 {brand?.restaurant_hours || 'Daily 7:00 AM – 11:00 PM'}</p>
         <p style={{ marginTop: 8, fontSize: 12, color: '#8b93ad' }}>{brand?.footer_text || `${name}. All rights reserved.`}</p>
