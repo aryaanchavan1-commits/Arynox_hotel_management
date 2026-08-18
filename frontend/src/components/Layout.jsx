@@ -4,6 +4,7 @@ import { get } from '../api.js';
 
 const NAV = {
   dashboard: ['dashboard', '📊', 'Dashboard'],
+  search: ['search', '🔍', 'Global Search'],
   rooms: ['rooms', '🚪', 'Rooms'],
   availability: ['availability', '📅', 'Availability'],
   bookings: ['bookings', '🗓️', 'Bookings'],
@@ -22,7 +23,7 @@ const NAV = {
 };
 
 const SECTIONS = [
-  ['Operations', ['dashboard', 'rooms', 'availability', 'bookings', 'guests']],
+  ['Operations', ['dashboard', 'search', 'rooms', 'availability', 'bookings', 'guests']],
   ['Restaurant', ['restaurant', 'kitchen', 'pos']],
   ['Events', ['venue', 'channels']],
   ['Management', ['website', 'users', 'reports', 'assistant', 'settings']],
@@ -38,11 +39,11 @@ function logout() {
 export default function Layout({ user, children }) {
   const route = (location.hash.replace('#/', '') || 'staff/dashboard').split('/')[1] || 'dashboard';
   const [dark, setDark] = useState(() => (localStorage.getItem('arynox_theme') || 'light') === 'dark');
-  const [brand, setBrand] = useState('Hotel Lakshmi Deluxe');
+  const [brand, setBrand] = useState('Hotel Lakshmi Elite');
   const mods = ROLE_MODULES[user?.role] || [];
   const items = mods.map((m) => NAV[m]).filter(Boolean);
 
-  useEffect(() => { get('/settings').then((s) => setBrand(s?.hotel_name || 'Hotel Lakshmi Deluxe')).catch(() => {}); }, []);
+  useEffect(() => { get('/settings').then((s) => setBrand(s?.hotel_name || 'Hotel Lakshmi Elite')).catch(() => {}); }, []);
 
   function toggleDark() {
     const next = !dark;

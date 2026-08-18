@@ -3,7 +3,7 @@ import { getBase } from '../api.js';
 
 export default function ReceiptModal({ bill, onClose }) {
   const [full, setFull] = useState(null);
-  const [settings, setSettings] = useState({ hotel_name: 'Hotel Lakshmi Deluxe', hotel_address: '', hotel_phone: '' });
+  const [settings, setSettings] = useState({ hotel_name: 'Hotel Lakshmi Elite', hotel_address: '', hotel_phone: '' });
   const [printerIp, setPrinterIp] = useState('192.168.1.');
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
@@ -37,7 +37,7 @@ export default function ReceiptModal({ bill, onClose }) {
 
   const printThermal = async () => {
     setBusy(true);
-    setMsg('printingâ€¦');
+    setMsg('printing…');
     try {
       const res = await fetch(`${getBase()}/api/receipts/${full.id}/escpos`, { headers: { Authorization: 'Bearer ' + localStorage.getItem('arynox_token') } });
       const buf = await res.arrayBuffer();
@@ -48,9 +48,9 @@ export default function ReceiptModal({ bill, onClose }) {
         body: JSON.stringify({ ip: printerIp, port: 9100, data }),
       });
       const r = await bridge.json();
-      setMsg(r.ok ? `âœ… Sent to ${printerIp}:9100` : `âŒ ${r.error}`);
+      setMsg(r.ok ? `✅ Sent to ${printerIp}:9100` : `❌ ${r.error}`);
     } catch (e) {
-      setMsg('âŒ Bridge not running (start via run.bat) or printer unreachable: ' + e.message);
+      setMsg('❌ Bridge not running (start via run.bat) or printer unreachable: ' + e.message);
     }
     setBusy(false);
   };
@@ -58,26 +58,26 @@ export default function ReceiptModal({ bill, onClose }) {
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h3>ðŸ§¾ Receipt #{full.id} <span className="badge paid">{full.type} Â· {full.payment_method.toUpperCase()}</span></h3>
+        <h3>🧾 Receipt #{full.id} <span className="badge paid">{full.type} · {full.payment_method.toUpperCase()}</span></h3>
         <div className="receipt-preview">
-          <div className="c"><b>{settings.hotel_name || 'Hotel Lakshmi Deluxe'}</b></div>
+          <div className="c"><b>{settings.hotel_name || 'Hotel Lakshmi Elite'}</b></div>
           {settings.hotel_address && <div className="c" style={{ fontSize: 12 }}>{settings.hotel_address}</div>}
           {settings.hotel_phone && <div className="c" style={{ fontSize: 12 }}>Tel: {settings.hotel_phone}</div>}
-          <div className="line2">BILL #{full.id} Â· {full.created_at?.slice(0, 16)}</div>
+          <div className="line2">BILL #{full.id} · {full.created_at?.slice(0, 16)}</div>
           {full.guest_name && <div className="c">Guest: {full.guest_name}</div>}
           {(full.items || []).map((it, i) => (
-            <div key={i} className="row2"><span>{it.name} Ã—{it.qty || 1}</span><span>â‚¹{(Number(it.price) * (it.qty || 1)).toFixed(2)}</span></div>
+            <div key={i} className="row2"><span>{it.name} ×{it.qty || 1}</span><span>₹{(Number(it.price) * (it.qty || 1)).toFixed(2)}</span></div>
           ))}
           <div className="line2" />
-          <div className="row2"><span>Subtotal</span><span>â‚¹{Number(full.subtotal).toFixed(2)}</span></div>
-          <div className="row2"><span>Tax</span><span>â‚¹{Number(full.tax).toFixed(2)}</span></div>
-          <div className="row2 total"><b>TOTAL</b><span><b>â‚¹{Number(full.total).toFixed(2)}</b></span></div>
-          <div className="c line2" style={{ marginTop: 8 }}>Thank you! Visit again ðŸ’</div>
+          <div className="row2"><span>Subtotal</span><span>₹{Number(full.subtotal).toFixed(2)}</span></div>
+          <div className="row2"><span>Tax</span><span>₹{Number(full.tax).toFixed(2)}</span></div>
+          <div className="row2 total"><b>TOTAL</b><span><b>₹{Number(full.total).toFixed(2)}</b></span></div>
+          <div className="c line2" style={{ marginTop: 8 }}>Thank you! Visit again 💐</div>
         </div>
         <div className="modal-actions">
-          <button className="btn" onClick={printBrowser}>ðŸ–¨ï¸ Browser print</button>
-          <button className="btn" onClick={downloadEscPos}>ðŸ“„ ESC/POS file</button>
-          <button className="btn primary" onClick={printThermal} disabled={busy}>ðŸ–¨ï¸ Thermal (LAN 9100)</button>
+          <button className="btn" onClick={printBrowser}>🖨️ Browser print</button>
+          <button className="btn" onClick={downloadEscPos}>📄 ESC/POS file</button>
+          <button className="btn primary" onClick={printThermal} disabled={busy}>🖨️ Thermal (LAN 9100)</button>
         </div>
         <div className="printer-row">
           <input value={printerIp} onChange={(e) => setPrinterIp(e.target.value)} placeholder="Printer IP" />

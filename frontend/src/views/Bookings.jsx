@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { get, post, put } from '../api.js';
+import { get, post, put, del } from '../api.js';
 import ReceiptModal from '../components/ReceiptModal.jsx';
 import { useToast } from '../components/Toast.jsx';
 
@@ -60,6 +60,7 @@ export default function Bookings() {
   const visible = bookings.filter((b) => {
     if (filter === 'online') return b.source === 'online';
     if (filter === 'staff') return b.source === 'staff';
+    if (filter === 'inquiry') return b.status === 'inquiry';
     if (filter === 'unpaid') return b.payment_status !== 'paid';
     if (filter === 'paid') return b.payment_status === 'paid';
     return true;
@@ -85,6 +86,7 @@ export default function Bookings() {
             <option value="all">All bookings</option>
             <option value="online">Online (website)</option>
             <option value="staff">Offline (staff)</option>
+            <option value="inquiry">📞 Callback inquiries</option>
             <option value="unpaid">Unpaid</option>
             <option value="paid">Paid</option>
           </select>
@@ -95,31 +97,39 @@ export default function Bookings() {
         <table>
           <thead><tr><th>Ref</th><th>Guest</th><th>Room</th><th>Dates</th><th>Plan</th><th>Source</th><th>Payment</th><th>Status</th><th>Total</th><th>Actions</th></tr></thead>
           <tbody>
-            {visible.map((b) => (
+            {visible.map((b) => {
+              let extras = [];
+              try { extras = JSON.parse(b.extras_json || '[]'); } catch {}
+              const inquiry = b.status === 'inquiry';
+              const notes = extras?.notes || '';
+              return (
               <tr key={b.id}>
                 <td><b style={{ color: 'var(--primary)' }}>{b.reference || '#' + b.id}</b></td>
                 <td>{b.guest_name}<br /><small style={{ color: 'var(--muted)' }}>{b.guest_phone}</small></td>
-                 <td>{b.room_number} <small style={{ color: 'var(--muted)' }}>({b.room_type})</small></td>
-                 <td>{b.check_in} → {b.check_out}</td>
-                 <td><small>{b.meal_plan?.replace('_', ' ')}</small></td>
+                 <td>{inquiry ? '—' : `${b.room_number || ''} ${b.room_type ? `(${b.room_type})` : ''}`}</td>
+                 <td>{inquiry ? (b.check_in ? `${b.check_in} → ${b.check_out || '?'}` : 'Flexible dates') : `${b.check_in} → ${b.check_out}`}</td>
+                 <td><small>{inquiry ? '📞 Callback requested' : b.meal_plan?.replace('_', ' ')}</small></td>
                  <td><span className={`badge ${b.source === 'online' ? 'open' : 'available'}`}>{b.source}</span>
                      {b.has_id_proof && <span className="badge" style={{ marginLeft: 6, background: '#0ea5e922', color: '#0ea5e9' }}>ID ✅</span>}
                  </td>
-                 <td><span className={'badge ' + (b.payment_status === 'paid' ? 'green' : 'red')}>{b.payment_status === 'paid' ? '💰 Paid' : '💳 ' + (b.payment_method || 'unpaid')}</span></td>
-                 <td><span className={'badge ' + b.status}>{b.status}</span></td>
+                 <td>{inquiry ? <span className="badge" style={{ background: '#f59e0b22', color: '#d97706' }}>📞 Call back</span> : <span className={'badge ' + (b.payment_status === 'paid' ? 'green' : 'red')}>{b.payment_status === 'paid' ? '💰 Paid' : '💳 ' + (b.payment_method || 'unpaid')}</span>}</td>
+                 <td><span className={'badge ' + b.status}>{inquiry ? 'inquiry' : b.status}</span></td>
                  <td>{fmt(currency, b.total)}</td>
                  <td>
                    <div className="row" style={{ gap: 6 }}>
-                     {b.has_id_proof && <button className="btn sm" title="View ID proof" onClick={async () => { const d = await get(`/bookings/${b.id}/document`); setDocView({ reference: b.reference, ...d }); }}>📎</button>}
-                     {b.payment_status !== 'paid' && ['confirmed', 'checked_in'].includes(b.status) && <button className="btn sm green" title="Mark paid" onClick={() => act(b, 'mark-paid')}>✓ Paid</button>}
-                     {b.status === 'pending' && <button className="btn sm primary" onClick={() => act(b, 'confirm')}>Confirm</button>}
-                     {b.status === 'confirmed' && <button className="btn sm green" onClick={() => act(b, 'checkin')}>Check-in</button>}
-                     {b.status === 'checked_in' && <button className="btn sm primary" onClick={() => setCheckout(b)}>Check-out</button>}
-                     {['pending', 'confirmed'].includes(b.status) && <button className="btn sm red" onClick={() => act(b, 'cancel')}>Cancel</button>}
+                     {inquiry && b.guest_phone && <a className="btn sm green" href={`tel:${b.guest_phone}`}>📞 Call</a>}
+                     {inquiry && notes && <span className="badge" title={notes} style={{ background: '#f8fafc', color: '#64748b', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{notes}</span>}
+                     {inquiry && <button className="btn sm red" title="Delete inquiry" onClick={async () => { await del(`/bookings/${b.id}`); load(); }}>✕</button>}
+                     {!inquiry && b.has_id_proof && <button className="btn sm" title="View ID proof" onClick={async () => { const d = await get(`/bookings/${b.id}/document`); setDocView({ reference: b.reference, ...d }); }}>📎</button>}
+                     {!inquiry && b.payment_status !== 'paid' && ['confirmed', 'checked_in'].includes(b.status) && <button className="btn sm green" title="Mark paid" onClick={() => act(b, 'mark-paid')}>✓ Paid</button>}
+                     {!inquiry && b.status === 'pending' && <button className="btn sm primary" onClick={() => act(b, 'confirm')}>Confirm</button>}
+                     {!inquiry && b.status === 'confirmed' && <button className="btn sm green" onClick={() => act(b, 'checkin')}>Check-in</button>}
+                     {!inquiry && b.status === 'checked_in' && <button className="btn sm primary" onClick={() => setCheckout(b)}>Check-out</button>}
+                     {!inquiry && ['pending', 'confirmed'].includes(b.status) && <button className="btn sm red" onClick={() => act(b, 'cancel')}>Cancel</button>}
                    </div>
                  </td>
                </tr>
-            ))}
+            );})}
           </tbody>
         </table>
       </div>

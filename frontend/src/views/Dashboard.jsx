@@ -66,7 +66,7 @@ export default function Dashboard() {
       <div className="between">
         <div>
           <h1>Dashboard</h1>
-          <p className="sub">Hotel Lakshmi Deluxe · overview of today's operations</p>
+          <p className="sub">Hotel Lakshmi Elite · overview of today's operations</p>
         </div>
         <div className="row">
           <a href="#/bookings" className="btn primary">➕ New Booking</a>

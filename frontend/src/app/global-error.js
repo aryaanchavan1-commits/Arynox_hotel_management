@@ -9,7 +9,7 @@ export default function GlobalError({ error, reset }) {
         <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 30, background: '#0c1226', color: '#fff' }}>
           <div style={{ textAlign: 'center', maxWidth: 460 }}>
             <div style={{ fontSize: 46 }}>🏨</div>
-            <h2 style={{ margin: '12px 0 6px' }}>Hotel Lakshmi Deluxe — just a hiccup</h2>
+            <h2 style={{ margin: '12px 0 6px' }}>Hotel Lakshmi Elite — just a hiccup</h2>
             <p style={{ color: '#aab3cc', fontSize: 14, lineHeight: 1.6 }}>
               {error?.message || 'An unexpected error occurred. Please try again.'}
             </p>

@@ -5,7 +5,7 @@ const JSON_OK = (v) => { try { JSON.parse(v); return true; } catch { return fals
 
 export default function Settings() {
   const [form, setForm] = useState({
-    hotel_name: 'Hotel Lakshmi Deluxe', hotel_address: '', hotel_phone: '', tax_rate: '5',
+    hotel_name: 'Hotel Lakshmi Elite', hotel_address: '', hotel_phone: '', tax_rate: '5',
     email: '', welcome_message: '', tagline: '', primary_color: '#4f46e5',
     about_text: '', footer_text: '', facilities_json: '[]', gallery_json: '[]', social_json: '{}',
     razorpay_key_id: '', razorpay_key_secret: '', razorpay_webhook_secret: '', api_base_url: '', website_url: '',
