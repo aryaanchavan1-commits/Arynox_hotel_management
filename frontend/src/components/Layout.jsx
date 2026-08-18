@@ -16,6 +16,7 @@ const NAV = {
   pos: ['pos', '🧾', 'POS / Billing'],
   venue: ['venue', '🎪', 'Venue Hall'],
   channels: ['channels', '📡', 'Channel Manager'],
+  'ota-ops': ['ota-ops', '🌐', 'OTA Daily Ops'],
   website: ['website', '🌐', 'Website Manager'],
   reports: ['reports', '📈', 'Reports'],
   assistant: ['assistant', '🤖', 'AI Assistant'],
@@ -25,7 +26,7 @@ const NAV = {
 const SECTIONS = [
   ['Operations', ['dashboard', 'search', 'rooms', 'availability', 'bookings', 'guests']],
   ['Restaurant', ['restaurant', 'kitchen', 'pos']],
-  ['Events', ['venue', 'channels']],
+  ['Events', ['venue', 'channels', 'ota-ops']],
   ['Management', ['website', 'users', 'reports', 'assistant', 'settings']],
 ];
 

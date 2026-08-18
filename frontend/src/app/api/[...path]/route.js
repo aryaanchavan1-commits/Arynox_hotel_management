@@ -89,6 +89,27 @@ async function handle(req, params) {
   if (path[0] === 'health' && method === 'GET') {
     return NextResponse.json({ ok: true, service: 'arynox-hotel-backend', time: new Date().toISOString() });
   }
+  // Channex webhook receiver: Channex pushes booking/ARI events here; we run a full channex sync so
+  // OTA bookings appear in the ERP within seconds. Authenticated via x-webhook-secret header.
+  if (path[0] === 'channex-webhook' && method === 'POST') {
+    if (req.headers.get('x-webhook-secret') !== 'lakshmi-channex-2026') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    try { await ensureReady(); } catch (e) { return NextResponse.json({ error: 'Database unavailable' }, { status: 503 }); }
+    try {
+      const rows = (await db.execute("SELECT * FROM channels WHERE code='channex' AND enabled=1")).rows;
+      const s = (await db.execute("SELECT value FROM hotel_settings WHERE key='hotel_name'")).rows[0];
+      const cur = (await db.execute("SELECT value FROM hotel_settings WHERE key='currency_symbol'")).rows[0];
+      const ctx = { hotel_name: s?.value || 'Hotel Lakshmi Elite', currency: cur?.value || '₹' };
+      const out = [];
+      for (const ch of rows) {
+        try { out.push(await syncChannel(ch, ctx)); } catch (e) { out.push({ error: e.message }); }
+      }
+      return NextResponse.json({ ok: true, synced: out.length });
+    } catch (e) {
+      return NextResponse.json({ ok: false, error: e.message }, { status: 500 });
+    }
+  }
   if (path[0] === 'guest' && ['signup', 'login'].includes(path[1]) && method === 'POST') {
     try { await ensureReady(); } catch (e) { return NextResponse.json({ error: 'Database unavailable, retrying…' }, { status: 503 }); }
   }
@@ -741,29 +762,77 @@ if (path[0] === 'import' && method === 'POST' && user.role === 'admin') {
   }
    if (path[0] === 'bookings' && method === 'POST' && !path[1]) {
     const b = await body(req);
-    const { guest_id, room_id, check_in, check_out, adults, children, status, meal_plan, extras, source, reference, guest_account_id,
+    const { guest_id, room_id, room_type_id, check_in, check_out, adults, children, status, meal_plan, extras, source, reference, channel, channel_ref, guest_account_id,
       payment_method, id_proof_base64, id_proof_name, id_proof_mime, pay_now } = b;
-    const price = await roomPrice(room_id);
+    let rid = room_id;
+    if (!rid && room_type_id) {
+      const free = (await db.execute(
+        `SELECT r.id FROM rooms r WHERE r.room_type_id=? AND r.status='available'
+         AND r.id NOT IN (SELECT room_id FROM bookings WHERE status NOT IN ('cancelled','checked_out') AND check_in < ? AND check_out > ?) LIMIT 1`,
+        [room_type_id, check_out, check_in])).rows[0];
+      if (!free) return NextResponse.json({ error: 'No room free in this type for the selected dates' }, { status: 409 });
+      rid = free.id;
+    }
+    if (!rid) return NextResponse.json({ error: 'room_id or room_type_id required' }, { status: 400 });
+    const price = await roomPrice(rid);
     const total = price * nights(check_in, check_out);
     const overlap = (await db.execute(
       `SELECT id FROM bookings WHERE room_id=? AND status NOT IN ('cancelled','checked_out') AND check_in < ? AND check_out > ?`,
-      [room_id, check_out, check_in]
+      [rid, check_out, check_in]
     )).rows[0];
     if (overlap) return NextResponse.json({ error: 'Room is not available for the selected dates' }, { status: 409 });
     const ref = reference || makeRef();
     const paymentStatus = pay_now ? 'paid' : 'unpaid';
     if (id_proof_base64 && String(id_proof_base64).length > 3_200_000) return NextResponse.json({ error: 'ID proof image too large (max 2MB)' }, { status: 413 });
     const r = await db.execute(
-      `INSERT INTO bookings (guest_id, room_id, check_in, check_out, adults, children, status, total, meal_plan, extras_json, source, reference, guest_account_id, payment_status, payment_method, id_proof_base64, id_proof_name, id_proof_mime)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-      [guest_id, room_id, check_in, check_out, adults || 1, children || 0, status || 'confirmed', total,
-       meal_plan || 'room_only', JSON.stringify(extras || []), source || 'staff', ref, guest_account_id || 0,
+      `INSERT INTO bookings (guest_id, room_id, check_in, check_out, adults, children, status, total, meal_plan, extras_json, source, reference, channel, channel_ref, guest_account_id, payment_status, payment_method, id_proof_base64, id_proof_name, id_proof_mime)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      [guest_id, rid, check_in, check_out, adults || 1, children || 0, status || 'confirmed', total,
+       meal_plan || 'room_only', JSON.stringify(extras || []), source || 'staff', ref, channel || '', channel_ref || '', guest_account_id || 0,
        paymentStatus, payment_method || '', id_proof_base64 || '', id_proof_name || '', id_proof_mime || '']);
     if (pay_now) {
       await db.execute("UPDATE bookings SET payment_status='paid', payment_method=? WHERE id=?", [payment_method || 'cash', Number(r.lastInsertRowid)]);
     }
     autoSyncChannels().catch(() => {});
-    return NextResponse.json({ id: Number(r.lastInsertRowid), total, reference: ref });
+    return NextResponse.json({ id: Number(r.lastInsertRowid), room_id: rid, total, reference: ref });
+  }
+  // ---------- OTA daily ops (ERP only) ----------
+  if (path[0] === 'ota-ops' && method === 'GET') {
+    const days = Math.min(30, Math.max(1, Number(url.searchParams.get('days') || 7)));
+    const types = (await db.execute('SELECT * FROM room_types ORDER BY price')).rows;
+    const rooms = (await db.execute('SELECT id, room_type_id, number FROM rooms')).rows;
+    const active = (await db.execute("SELECT * FROM bookings WHERE status NOT IN ('cancelled','checked_out') AND check_out > date('now','-1 day')")).rows;
+    const today = new Date().toISOString().slice(0, 10);
+    const dayAt = (i) => new Date(Date.now() + i * 86400000).toISOString().slice(0, 10);
+    const horizon = [];
+    for (let i = 0; i < days; i++) {
+      const ds = dayAt(i);
+      const overlapping = active.filter((b) => b.check_in < ds && b.check_out > ds);
+      const perType = types.map((t) => {
+        const trs = rooms.filter((r) => Number(r.room_type_id) === Number(t.id));
+        const booked = overlapping.filter((b) => trs.some((r) => Number(r.id) === Number(b.room_id))).length;
+        return { type_id: t.id, name: t.name, total: trs.length, booked, free: Math.max(0, trs.length - booked), rate: Number(t.price) };
+      });
+      horizon.push({
+        date: ds,
+        weekday: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date(ds).getDay()],
+        perType,
+        arrivals: active.filter((b) => b.check_in === ds).length,
+        departures: active.filter((b) => b.check_out === ds).length,
+        occupancy: Math.round((perType.reduce((s, p) => s + p.booked, 0) / Math.max(1, perType.reduce((s, p) => s + p.total, 0))) * 100),
+      });
+    }
+    const todayRows = (await db.execute(
+      `SELECT b.*, g.name AS guest_name, g.phone AS guest_phone, r.number AS room_number, t.name AS room_type
+       FROM bookings b JOIN guests g ON g.id=b.guest_id JOIN rooms r ON r.id=b.room_id JOIN room_types t ON t.id=r.room_type_id
+       WHERE b.status NOT IN ('cancelled','checked_out') AND (b.check_in = ? OR b.check_out = ?) ORDER BY b.check_in`,
+      [today, today])).rows;
+    const channelCounts = {};
+    for (const b of active.filter((x) => x.check_in <= today && x.check_out > today)) {
+      const k = b.channel || 'staff';
+      channelCounts[k] = (channelCounts[k] || 0) + 1;
+    }
+    return NextResponse.json({ today, days, horizon, todayRows, channelCounts, channels: (await db.execute('SELECT code, name, enabled, practice FROM channels')).rows });
   }
   if (path[0] === 'bookings' && path[1] && path[2] === 'checkin' && method === 'POST') {
     const b = (await db.execute('SELECT * FROM bookings WHERE id=?', [path[1]])).rows[0];

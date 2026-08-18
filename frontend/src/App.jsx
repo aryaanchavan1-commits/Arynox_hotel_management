@@ -33,6 +33,7 @@ import RestaurantBooking from './views/RestaurantBooking.jsx';
 import PublicVenue from './views/PublicVenue.jsx';
 import Venue from './views/Venue.jsx';
 import ChannelManager from './views/ChannelManager.jsx';
+import OtaOps from './views/OtaOps.jsx';
 import Website from './views/Website.jsx';
 import UnifiedCheckout from './views/UnifiedCheckout.jsx';
 import Search from './views/Search.jsx';
@@ -109,6 +110,7 @@ export default function App() {
     pos: <POS />,
     venue: <Venue />,
     channels: <ChannelManager />,
+    'ota-ops': <OtaOps />,
     website: <Website />,
     reports: <Reports />,
     assistant: <Assistant />,

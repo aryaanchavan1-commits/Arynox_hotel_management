@@ -52,14 +52,14 @@ export default function ChannelManager() {
 
   const openCfg = (ch) => {
     setCfg(ch);
-    setCfgForm({ rate_multiplier: ch.rate_multiplier || 1, api_key: ch.credentials?.api_key || '', endpoint_url: ch.credentials?.endpoint_url || '', room_map: { ...(ch.room_map || {}) } });
+    setCfgForm({ rate_multiplier: ch.rate_multiplier || 1, api_key: ch.credentials?.api_key || '', endpoint_url: ch.credentials?.endpoint_url || '', property_id: ch.credentials?.property_id || '', base_url: ch.credentials?.base_url || 'staging', rate_plan_ids: { ...(ch.credentials?.rate_plan_ids || {}) }, room_map: { ...(ch.room_map || {}) } });
   };
 
   const saveCfg = async (e) => {
     e.preventDefault();
     await put(`/channels/${cfg.id}`, {
       rate_multiplier: Number(cfgForm.rate_multiplier) || 1,
-      credentials: { api_key: cfgForm.api_key, endpoint_url: cfgForm.endpoint_url },
+      credentials: { api_key: cfgForm.api_key, endpoint_url: cfgForm.endpoint_url, property_id: cfgForm.property_id, base_url: cfgForm.base_url, rate_plan_ids: cfgForm.rate_plan_ids },
       room_map: cfgForm.room_map,
     });
     toast(`${cfg.name} settings saved`);
@@ -195,6 +195,38 @@ export default function ChannelManager() {
               <input type="number" step="0.05" min="0.1" max="10" value={cfgForm.rate_multiplier} onChange={(e) => setCfgForm((f) => ({ ...f, rate_multiplier: e.target.value }))} />
               <label style={{ marginTop: 10 }}>API key / login (leave empty in practice mode)</label>
               <input type="password" value={cfgForm.api_key} onChange={(e) => setCfgForm((f) => ({ ...f, api_key: e.target.value }))} placeholder="••••••••" />
+              {cfg.code === 'channex' && (
+                <>
+                  <label style={{ marginTop: 10 }}>Channex Property ID (from staging/app.channex.io → property)</label>
+                  <input type="text" value={cfgForm.property_id} onChange={(e) => setCfgForm((f) => ({ ...f, property_id: e.target.value }))} placeholder="UUID e.g. 3fa85f64-…" />
+                  <label style={{ marginTop: 10 }}>Environment</label>
+                  <select value={cfgForm.base_url} onChange={(e) => setCfgForm((f) => ({ ...f, base_url: e.target.value }))}>
+                    <option value="staging">Staging (free sandbox)</option>
+                    <option value="prod">Production</option>
+                  </select>
+                  <p className="sub" style={{ marginTop: 8 }}>Room map = Channex room-type IDs. Rate plan IDs per type below (optional but recommended — needed to push rates).</p>
+                  {roomTypes.map((t) => (
+                    <div key={t.id} className="row" style={{ gap: 10, marginTop: 6 }}>
+                      <span style={{ fontSize: 12, minWidth: 140 }}>{t.name}</span>
+                      <input
+                        type="text"
+                        style={{ flex: 1 }}
+                        placeholder="Channex rate plan id"
+                        value={cfgForm.rate_plan_ids[String(t.id)] || ''}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setCfgForm((f) => {
+                            const ids = { ...f.rate_plan_ids };
+                            if (val === '') delete ids[String(t.id)];
+                            else ids[String(t.id)] = val;
+                            return { ...f, rate_plan_ids: ids };
+                          });
+                        }}
+                      />
+                    </div>
+                  ))}
+                </>
+              )}
               <label style={{ marginTop: 10 }}>Channel endpoint URL (optional override)</label>
               <input type="text" value={cfgForm.endpoint_url} onChange={(e) => setCfgForm((f) => ({ ...f, endpoint_url: e.target.value }))} placeholder="https://…" />
               <label style={{ marginTop: 12 }}>Room mapping (ERP room type → channel room id)</label>
