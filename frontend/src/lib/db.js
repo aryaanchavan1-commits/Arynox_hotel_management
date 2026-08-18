@@ -248,6 +248,7 @@ async function migrate() {
       ["payment_method", "TEXT DEFAULT ''"],
       ["payment_intent_id", "TEXT DEFAULT ''"],
     ],
+    table_reservations: [['table_id', 'INTEGER DEFAULT 0'], ['source', "TEXT DEFAULT 'website'"]],
     orders: [['table_id', 'INTEGER DEFAULT 0']],
     order_items: [["kot_status", "TEXT DEFAULT 'draft'"], ["kot_time", "TEXT DEFAULT ''"]],
   };
@@ -271,7 +272,7 @@ async function seed() {
 
   const users = await db.execute('SELECT COUNT(*) AS c FROM users');
   if (Number(users.rows[0].c) === 0) {
-    await db.execute('INSERT INTO users (username, password_hash, name, role, enabled) VALUES (?, ?, ?, ?, 1)', ['admin', hash('admin123', salt), 'Hotel Lakshmi Deluxe Admin', 'admin']);
+    await db.execute('INSERT INTO users (username, password_hash, name, role, enabled) VALUES (?, ?, ?, ?, 1)', ['admin', hash('admin123', salt), 'Hotel Lakshmi Elite Admin', 'admin']);
     await db.execute('INSERT INTO users (username, password_hash, name, role, enabled) VALUES (?, ?, ?, ?, 1)', ['reception', hash('reception123', salt), 'Reception', 'reception']);
     await db.execute('INSERT INTO users (username, password_hash, name, role, enabled) VALUES (?, ?, ?, ?, 1)', ['manager', hash('manager123', salt), 'Manager', 'manager']);
     await db.execute('INSERT INTO users (username, password_hash, name, role, enabled) VALUES (?, ?, ?, ?, 1)', ['kitchen', hash('kitchen123', salt), 'Kitchen Staff', 'kitchen']);
@@ -347,6 +348,43 @@ async function seed() {
       await db.execute(`ALTER TABLE bookings ADD COLUMN ${col} TEXT DEFAULT ''`);
     } catch {}
   }
+  // rebuild bookings with nullable room_id so phone-only "inquiry" bookings can be stored (idempotent)
+  try {
+    const bk = await db.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='bookings'");
+    const ddl = (bk.rows[0] && bk.rows[0].sql) || '';
+    if (/room_id INTEGER NOT NULL/.test(ddl)) {
+      await db.execute(`CREATE TABLE IF NOT EXISTS bookings_new (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        guest_id INTEGER NOT NULL,
+        room_id INTEGER,
+        check_in TEXT NOT NULL,
+        check_out TEXT NOT NULL,
+        adults INTEGER DEFAULT 1,
+        children INTEGER DEFAULT 0,
+        status TEXT DEFAULT 'confirmed',
+        total REAL DEFAULT 0,
+        meal_plan TEXT DEFAULT 'room_only',
+        extras_json TEXT DEFAULT '[]',
+        source TEXT DEFAULT 'staff',
+        reference TEXT DEFAULT '',
+        guest_account_id INTEGER DEFAULT 0,
+        id_proof_base64 TEXT DEFAULT '',
+        id_proof_name TEXT DEFAULT '',
+        id_proof_mime TEXT DEFAULT '',
+        payment_status TEXT DEFAULT 'unpaid',
+        payment_method TEXT DEFAULT '',
+        payment_intent_id TEXT DEFAULT '',
+        channel TEXT DEFAULT '',
+        channel_ref TEXT DEFAULT '',
+        created_at TEXT DEFAULT (datetime('now')),
+        FOREIGN KEY (guest_id) REFERENCES guests(id),
+        FOREIGN KEY (room_id) REFERENCES rooms(id)
+      )`);
+      await db.execute('INSERT INTO bookings_new (id, guest_id, room_id, check_in, check_out, adults, children, status, total, meal_plan, extras_json, source, reference, guest_account_id, id_proof_base64, id_proof_name, id_proof_mime, payment_status, payment_method, payment_intent_id, channel, channel_ref, created_at) SELECT id, guest_id, room_id, check_in, check_out, adults, children, status, total, meal_plan, extras_json, source, reference, guest_account_id, id_proof_base64, id_proof_name, id_proof_mime, payment_status, payment_method, payment_intent_id, channel, channel_ref, created_at FROM bookings');
+      await db.execute('DROP TABLE bookings');
+      await db.execute('ALTER TABLE bookings_new RENAME TO bookings');
+    }
+  } catch { /* already rebuilt or locked — skip */ }
   try {
     await db.execute("ALTER TABLE menu_items ADD COLUMN image TEXT DEFAULT ''");
   } catch {}
@@ -371,7 +409,7 @@ async function seed() {
     }
   }
 
-  const brand = 'Hotel Lakshmi Deluxe';
+  const brand = 'Hotel Lakshmi Elite';
   const migrateBrand = (key, value) =>
     `INSERT INTO hotel_settings (key, value) VALUES ('${key}', '${value}')
      ON CONFLICT(key) DO UPDATE SET value = CASE WHEN hotel_settings.value IN ('Arynox Grand Hotel', 'ARYNOX HOTEL', 'Arynox', 'ARYNOX GRAND HOTEL', 'Arynox Hotel ERP', 'Arynox_Hotel_ERP', 'ARYNOX_HOTEL_ERP', 'Arynox Hotel ERP, Tech Park, Pune, India') THEN '${value}' ELSE hotel_settings.value END`;
@@ -379,42 +417,52 @@ async function seed() {
     `INSERT INTO hotel_settings (key, value) VALUES ('${key}', '${String(value).replace(/'/g, "''")}')
      ON CONFLICT(key) DO UPDATE SET value=excluded.value`;
   // one-time branding rename (idempotent — no-op once done)
-  await db.execute("UPDATE hotel_settings SET value=REPLACE(value,'Hotel Laxmi Elite','Hotel Lakshmi Deluxe') WHERE key IN ('hotel_name','welcome_message','about_text','footer_text','hotel_address','tagline')");
-  await db.execute("UPDATE hotel_settings SET value=REPLACE(value,'Laxmi Elite','Lakshmi Deluxe') WHERE key IN ('hotel_name','welcome_message','about_text','footer_text','tagline')");
+  await db.execute("UPDATE hotel_settings SET value=REPLACE(value,'Hotel Laxmi Elite','Hotel Lakshmi Elite') WHERE key IN ('hotel_name','welcome_message','about_text','footer_text','hotel_address','tagline')");
+  await db.execute("UPDATE hotel_settings SET value=REPLACE(value,'Laxmi Elite','Lakshmi Elite') WHERE key IN ('hotel_name','welcome_message','about_text','footer_text','tagline')");
+  await db.execute("UPDATE hotel_settings SET value=REPLACE(value,'Hotel Lakshmi Deluxe','Hotel Lakshmi Elite') WHERE key IN ('hotel_name','welcome_message','about_text','footer_text','hotel_address','tagline')");
+  await db.execute("UPDATE hotel_settings SET value=REPLACE(value,'Lakshmi Deluxe','Lakshmi Elite') WHERE key IN ('hotel_name','welcome_message','about_text','footer_text','tagline')");
   await db.execute(migrateBrand('hotel_name', brand));
-  await db.execute(migrateBrand('hotel_address', 'Hotel Lakshmi Deluxe, Near Rajwadu Resort, Mumbai-Pune Expressway, Pune, India'));
-  await db.execute(migrateBrand('hotel_phone', '+91 98765 43210'));
+  await db.execute(migrateBrand('hotel_address', 'Narayanwadi, Pachwad Phata, Karad - 415539 (NH4 / Karad-Kolhapur Highway)'));
+  await db.execute(migrateBrand('hotel_phone', '+91 99707 13675'));
+  // real-business (Karad) contact fix — replaces any stale Pune/Rajwadu defaults
+  await db.execute("UPDATE hotel_settings SET value='Narayanwadi, Pachwad Phata, Karad - 415539 (NH4 / Karad-Kolhapur Highway)' WHERE key='hotel_address' AND value LIKE '%Rajwadu%'");
+  await db.execute("UPDATE hotel_settings SET value='+91 99707 13675' WHERE key IN ('hotel_phone','restaurant_phone') AND value LIKE '%98765 43210%'");
+  // real hotel photos (idempotent — local files under /images/hotel)
+  await db.execute("UPDATE room_types SET image='/images/hotel/room-deluxe.jpg' WHERE name='Standard Room' AND image LIKE '%unsplash%'");
+  await db.execute("UPDATE room_types SET image='/images/hotel/room-balcony.jpg' WHERE name='Deluxe Room' AND image LIKE '%unsplash%'");
+  await db.execute("UPDATE room_types SET image='/images/hotel/room-superdeluxe.jpg' WHERE name='Suite' AND image LIKE '%unsplash%'");
+  await db.execute("UPDATE room_types SET image='/images/hotel/facade.jpg' WHERE name='Presidential Suite' AND image LIKE '%unsplash%'");
   await db.execute(migrateBrand('tax_rate', '5'));
   await db.execute(ensureSetting('currency_symbol', '₹'));
-  await db.execute(ensureSetting('welcome_message', 'Luxury redefined at Hotel Lakshmi Deluxe'));
-  await db.execute(ensureSetting('tagline', 'Luxury · Dining · Celebration'));
+  await db.execute(ensureSetting('welcome_message', 'Restaurant · Lodging · Multipurpose Hall & Lawn'));
+  await db.execute(ensureSetting('tagline', 'Dining · Lodging · Celebrations'));
   await db.execute(ensureSetting('primary_color', '#038C7F'));
   await db.execute(ensureSetting('secondary_color', '#F2C641'));
-  await db.execute(ensureSetting('about_text', 'Hotel Lakshmi Deluxe is a premium luxury hotel in Pune offering elegantly appointed rooms, a signature multi-cuisine restaurant, a rooftop pool, and warm Indian hospitality for discerning business and leisure travellers.'));
+  await db.execute(ensureSetting('about_text', 'Hotel Lakshmi Elite in Karad is a complete hospitality destination on the NH4 / Karad-Kolhapur Highway at Narayanwadi — a pure-vegetarian restaurant serving Indian and local Maharashtrian favourites, comfortable air-conditioned lodging with 20 rooms, and a spacious multipurpose AC hall & lawn for weddings, functions and events, with free parking, power backup and warm service.'));
   await db.execute(ensureSetting('email', 'reservations@laxmielite.com'));
   await db.execute(ensureSetting('facilities_json', JSON.stringify([
-    { icon: '🌐', title: 'Free Wi-Fi', text: 'Ultra-fast Wi-Fi 6 in every room' },
-    { icon: '🍽️', title: 'Aadhya Restaurant', text: 'Multi-cuisine dining & craft cocktails' },
-    { icon: '🏊', title: 'Rooftop Pool', text: 'Infinity pool with city views' },
-    { icon: '💼', title: 'Business Hub', text: 'Executive meeting rooms & co-working' },
-    { icon: '🚗', title: 'Valet Parking', text: 'Secure valet for guests' },
-    { icon: '🧘', title: 'Spa & Wellness', text: 'Full-service spa & yoga pavilion' },
+    { icon: '🍽️', title: 'Vegetarian Restaurant', text: 'Indian & Maharashtrian favourites, family friendly' },
+    { icon: '🏨', title: 'AC Lodging', text: '20 comfortable air-conditioned rooms' },
+    { icon: '🎪', title: 'Multipurpose Hall & Lawn', text: 'AC hall, lawn & garden for weddings and functions' },
+    { icon: '🎉', title: 'Event Packages', text: 'Decoration, sound system & buffet setup' },
+    { icon: '🚗', title: 'Free Parking', text: 'Space for 50 cars & 100 bikes' },
+    { icon: '🔋', title: 'Power Backup', text: 'Uninterrupted power for every event' },
   ])));
   await db.execute(ensureSetting('gallery_json', JSON.stringify([
-    { emoji: '🛏️', label: 'Premier Rooms', color: 'linear-gradient(135deg,#038C7F,#F2C641)' },
-    { emoji: '🍽️', label: 'Aadhya Dining', color: 'linear-gradient(135deg,#F2C641,#038C7F)' },
-    { emoji: '🌇', label: 'Skyline', color: 'linear-gradient(135deg,#038C7F,#2a9d8a)' },
-    { emoji: '🏊', label: 'Rooftop Pool', color: 'linear-gradient(135deg,#2a9d8a,#F2C641)' },
+    { emoji: '🛏️', label: 'AC Rooms', color: 'linear-gradient(135deg,#038C7F,#F2C641)' },
+    { emoji: '🍽️', label: 'Family Dining', color: 'linear-gradient(135deg,#F2C641,#038C7F)' },
+    { emoji: '🎪', label: 'Multipurpose Hall', color: 'linear-gradient(135deg,#038C7F,#2a9d8a)' },
+    { emoji: '🌿', label: 'Open Lawn', color: 'linear-gradient(135deg,#2a9d8a,#F2C641)' },
   ])));
   await db.execute(ensureSetting('social_json', JSON.stringify({
     facebook: 'https://facebook.com/hotellaxmielite',
     instagram: 'https://instagram.com/hotellaxmielite',
     twitter: 'https://twitter.com/hotellaxmielite',
   })));
-  await db.execute(ensureSetting('footer_text', 'Hotel Lakshmi Deluxe. All rights reserved.'));
+  await db.execute(ensureSetting('footer_text', 'Hotel Lakshmi Elite. All rights reserved.'));
   await db.execute(ensureSetting('restaurant_hours', 'Daily 7:00 AM – 11:00 PM'));
-  await db.execute(ensureSetting('restaurant_about', 'A signature multi-cuisine restaurant with a rooftop lounge, craft cocktails and warm Indian hospitality — the perfect setting for family dinners, celebrations and business lunches.'));
-  await db.execute(ensureSetting('restaurant_phone', '+91 98765 43210'));
+  await db.execute(ensureSetting('restaurant_about', 'A pure-vegetarian restaurant at Hotel Lakshmi Elite, Karad serving Indian and local Maharashtrian favourites — family dinners, birthdays, weddings and weekend food plans, with polite service and budget-friendly bills.'));
+  await db.execute(ensureSetting('restaurant_phone', '+91 99707 13675'));
   // secrets/URLs: only set when absent, never overwrite saved values on re-init
   const ensureKeep = (key, value) =>
     `INSERT INTO hotel_settings (key, value) SELECT '${key}', '${String(value).replace(/'/g, "''")}'
@@ -424,7 +472,17 @@ async function seed() {
   await db.execute(ensureKeep('razorpay_webhook_secret', ''));
   await db.execute(ensureKeep('api_base_url', ''));
   await db.execute(ensureKeep('website_url', ''));
-  await db.execute("UPDATE users SET name='Hotel Lakshmi Deluxe Admin' WHERE username='admin' AND name='Hotel Laxmi Elite Admin'");
+  await db.execute("UPDATE users SET name='Hotel Lakshmi Elite Admin' WHERE username='admin' AND (name='Hotel Lakshmi Deluxe Admin' OR name='Hotel Laxmi Elite Admin')");
+  // venues renamed to match the real property (Karad) — idempotent
+  await db.execute("UPDATE venues SET name='AC Multipurpose Hall', emoji='🎪', description='Air-conditioned multipurpose hall at Hotel Lakshmi Elite, Karad — perfect for weddings, sangeet, receptions, birthdays and corporate functions with decoration, sound system and buffet setup.' WHERE name='Grand Banquet Hall'");
+  await db.execute("UPDATE venues SET name='Open Lawn & Garden', emoji='🌿', description='Spacious open lawn and garden venue for outdoor celebrations — receptions, haldi, mehendi and evening functions under the sky.' WHERE name='Rooftop Lawn'");
+  await db.execute("UPDATE venues SET name='Mini Function Hall', emoji='💼', description='Compact AC function hall ideal for small gatherings, meetings and family get-togethers with catering support.' WHERE name='Executive Conference Hall'");
+  // order payment columns (guarded — idempotent)
+  const ordCols = (await db.execute('PRAGMA table_info(orders)')).rows.map((c) => c.name);
+  if (!ordCols.includes('payment_status')) await db.execute("ALTER TABLE orders ADD COLUMN payment_status TEXT DEFAULT 'unpaid'");
+  if (!ordCols.includes('payment_method')) await db.execute("ALTER TABLE orders ADD COLUMN payment_method TEXT DEFAULT ''");
+  if (!ordCols.includes('payment_intent_id')) await db.execute("ALTER TABLE orders ADD COLUMN payment_intent_id TEXT DEFAULT ''");
+  if (!ordCols.includes('email')) await db.execute("ALTER TABLE orders ADD COLUMN email TEXT DEFAULT ''");
 }
 
 let ready = false;

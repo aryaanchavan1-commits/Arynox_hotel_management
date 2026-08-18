@@ -7,6 +7,13 @@ import { chat, websiteChat } from '@/lib/ai';
 import { syncChannel, autoSyncChannels } from '@/lib/channels';
 import { Groq } from 'groq-sdk';
 import https from 'node:https';
+
+// when the hotel disables staff sign-in (env STAFF_LOGIN_ENABLED != 1), the ERP opens directly as admin.
+// This is owner-only: it CANNOT be changed by any user from inside the ERP.
+async function autoStaff() {
+  if (process.env.STAFF_LOGIN_ENABLED === '1') return null;
+  return { id: 0, username: 'admin', name: 'Administrator', role: 'admin' };
+}
 import crypto from 'node:crypto';
 
 export const runtime = 'nodejs';
@@ -66,7 +73,7 @@ async function handle(req, params) {
 
   // public/restaurant mode: this deployment only serves the public website (booking, restaurant menu/reservations, guest, payments, health).
   // Staff/ERP API surface stays exclusively on the ERP deployment.
-  if ((process.env.SITE_MODE === 'public' || process.env.SITE_MODE === 'restaurant') && !['health', 'public', 'guest', 'payments'].includes(path[0])) {
+  if ((process.env.SITE_MODE === 'public' || process.env.SITE_MODE === 'restaurant') && !['health', 'public', 'guest', 'payments', 'availability'].includes(path[0])) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
@@ -111,6 +118,7 @@ async function handle(req, params) {
         footer_text: s.footer_text || '',
         api_base_url: s.api_base_url || '',
         website_url: s.website_url || '',
+        staff_login_enabled: process.env.STAFF_LOGIN_ENABLED === '1',
         payments_enabled: !!(s.razorpay_key_id && s.razorpay_key_secret),
       },
       facilities,
@@ -144,6 +152,11 @@ async function handle(req, params) {
       menu: Object.entries(byCat).map(([category, items]) => ({ category, items })),
     });
   }
+  if (path[0] === 'public' && path[1] === 'tables' && method === 'GET') {
+    try { await ensureReady(); } catch (e) { return NextResponse.json({ error: 'Database unavailable, retrying…' }, { status: 503 }); }
+    const rows = (await db.execute('SELECT id, number, seats, status FROM tables ORDER BY number')).rows;
+    return NextResponse.json(rows);
+  }
   if (path[0] === 'public' && path[1] === 'reservations' && method === 'POST') {
     try { await ensureReady(); } catch (e) { return NextResponse.json({ error: 'Database unavailable, retrying…' }, { status: 503 }); }
     const b = await body(req);
@@ -152,12 +165,24 @@ async function handle(req, params) {
     const date = String(b.date || '').trim().slice(0, 20);
     const time = String(b.time || '19:00').slice(0, 10);
     const guests = Math.min(40, Math.max(1, Number(b.guests) || 2));
+    const tableId = Number(b.table_id) || 0;
     if (!name || !phone || !date) return NextResponse.json({ error: 'Name, phone and date are required' }, { status: 400 });
+    if (tableId) {
+      const t = (await db.execute('SELECT number, seats, status FROM tables WHERE id=?', [tableId])).rows[0];
+      if (!t) return NextResponse.json({ error: 'Selected table not found' }, { status: 400 });
+      if (t.status !== 'free') return NextResponse.json({ error: `Table ${t.number} is no longer available — please pick another` }, { status: 400 });
+      if (Number(t.seats) < guests) return NextResponse.json({ error: `Table ${t.number} seats only ${t.seats} guests` }, { status: 400 });
+      await db.execute(
+        'INSERT INTO table_reservations (name, phone, email, date, time, guests, notes, status, table_id, source) VALUES (?,?,?,?,?,?,?,?,?,?)',
+        [name, phone, String(b.email || '').slice(0, 100), date, time, guests, String(b.notes || '').slice(0, 500), 'pending', tableId, 'website']
+      );
+      return NextResponse.json({ ok: true, table: t.number, message: `Reservation received for Table ${t.number}` });
+    }
     await db.execute(
-      'INSERT INTO table_reservations (name, phone, email, date, time, guests, notes, status) VALUES (?,?,?,?,?,?,?,?)',
-      [name, phone, String(b.email || '').slice(0, 100), date, time, guests, String(b.notes || '').slice(0, 500), 'pending']
+      'INSERT INTO table_reservations (name, phone, email, date, time, guests, notes, status, source) VALUES (?,?,?,?,?,?,?,?,?)',
+      [name, phone, String(b.email || '').slice(0, 100), date, time, guests, String(b.notes || '').slice(0, 500), 'pending', 'website']
     );
-    return NextResponse.json({ ok: true, message: 'Reservation received' });
+    return NextResponse.json({ ok: true, table: '', message: 'Reservation received' });
   }
   if (path[0] === 'public' && path[1] === 'venues' && method === 'GET') {
     try { await ensureReady(); } catch (e) { return NextResponse.json({ error: 'Database unavailable, retrying…' }, { status: 503 }); }
@@ -195,13 +220,15 @@ async function handle(req, params) {
     if (clean.length === 0) return NextResponse.json({ error: 'Your cart is empty' }, { status: 400 });
     const name = String(b.name || '').trim().slice(0, 100);
     const phone = String(b.phone || '').trim().slice(0, 30);
+    const email = String(b.email || '').trim().slice(0, 120);
     const orderType = ['delivery', 'pickup'].includes(b.order_type) ? b.order_type : 'pickup';
     if (!name || !phone) return NextResponse.json({ error: 'Name and phone are required' }, { status: 400 });
     const addr = orderType === 'delivery' ? String(b.address || '').trim().slice(0, 300) : '';
     if (orderType === 'delivery' && !addr) return NextResponse.json({ error: 'Delivery address is required' }, { status: 400 });
+    const payMethod = ['online', 'cod', 'pay_at_restaurant'].includes(b.payment_method) ? b.payment_method : (orderType === 'delivery' ? 'cod' : 'pay_at_restaurant');
     const r = await db.execute(
-      "INSERT INTO orders (table_no, status, table_id, source, customer_name, customer_phone, order_type, address) VALUES ('ONLINE', 'open', 0, 'online', ?, ?, ?, ?)",
-      [name, phone, orderType, addr]
+      "INSERT INTO orders (table_no, status, table_id, source, customer_name, customer_phone, order_type, address, payment_status, payment_method, email) VALUES ('ONLINE', 'open', 0, 'online', ?, ?, ?, ?, 'unpaid', ?, ?)",
+      [name, phone, orderType, addr, payMethod, email]
     );
     const orderId = Number(r.lastInsertRowid);
     for (const it of clean) {
@@ -209,7 +236,26 @@ async function handle(req, params) {
     }
     const ref = makeRef();
     await db.execute('UPDATE orders SET table_no=? WHERE id=?', [`ONLINE-${ref}`, orderId]);
-    return NextResponse.json({ ok: true, reference: ref, order_id: orderId, total });
+    return NextResponse.json({ ok: true, reference: ref, order_id: orderId, total, payment_method: payMethod });
+  }
+  if (path[0] === 'public' && path[1] === 'inquiries' && method === 'POST') {
+    try { await ensureReady(); } catch (e) { return NextResponse.json({ error: 'Database unavailable, retrying…' }, { status: 503 }); }
+    const b = await body(req);
+    const name = String(b.name || '').trim().slice(0, 100);
+    const phone = String(b.phone || '').trim().slice(0, 30);
+    if (!name || !phone) return NextResponse.json({ error: 'Name and phone are required' }, { status: 400 });
+    const email = String(b.email || '').trim().slice(0, 120);
+    const notes = String(b.notes || '').trim().slice(0, 500);
+    const checkIn = /^\d{4}-\d{2}-\d{2}$/.test(String(b.check_in || '')) ? b.check_in : '';
+    const checkOut = /^\d{4}-\d{2}-\d{2}$/.test(String(b.check_out || '')) ? b.check_out : '';
+    const g = await db.execute('INSERT INTO guests (name, phone, email) VALUES (?,?,?)', [name, phone, email]);
+    const ref = makeRef();
+    await db.execute(
+      `INSERT INTO bookings (guest_id, room_id, check_in, check_out, adults, children, status, total, meal_plan, extras_json, source, reference, guest_account_id, payment_status)
+       VALUES (?,NULL,?,?,1,0,'inquiry',0,'room_only',?, 'online', ?, 0, 'unpaid')`,
+      [Number(g.lastInsertRowid), checkIn || null, checkOut || null, JSON.stringify({ notes, type: 'callback-inquiry' }), ref]
+    );
+    return NextResponse.json({ ok: true, reference: ref, message: 'Inquiry received — the hotel will call you back shortly.' });
   }
   if (path[0] === 'public' && path[1] === 'chat' && method === 'POST') {
     const b = await body(req);
@@ -335,6 +381,19 @@ async function handle(req, params) {
       const notes = pay.notes || {};
       const bid = Number(notes.booking_id || evt.payload.booking_id);
       if (bid) await db.execute("UPDATE bookings SET payment_status='paid', payment_intent_id=? WHERE id=?", [pay.id || 'rp', bid]);
+      const oid = Number(notes.order_id || evt.payload.order_id);
+      if (oid) {
+        await db.execute("UPDATE orders SET status='paid', payment_status='paid', payment_method='online', payment_intent_id=? WHERE id=?", [pay.id || 'rp', oid]);
+        const o = (await db.execute('SELECT customer_name FROM orders WHERE id=?', [oid])).rows[0];
+        if (o) {
+          const items = (await db.execute('SELECT item_name AS name, price, qty FROM order_items WHERE order_id=?', [oid])).rows;
+          const st = items.reduce((x, i) => x + Number(i.price) * Number(i.qty), 0);
+          await db.execute(
+            'INSERT INTO bills (type, ref_id, guest_id, guest_name, items_json, subtotal, tax, total, payment_method, paid) VALUES (?,?,?,?,?,?,?,?,?,1)',
+            ['order', oid, 0, o.customer_name || 'Guest', JSON.stringify(items), st, 0, st, 'online']
+          );
+        }
+      }
     }
     return NextResponse.json({ received: true });
   }
@@ -345,15 +404,32 @@ async function handle(req, params) {
     const secret = cfg.razorpay_key_secret || process.env.RAZORPAY_KEY_SECRET;
     if (!key || !secret) return NextResponse.json({ error: 'Payments not configured (set RAZORPAY_KEY_ID/SECRET in Admin → Settings)' }, { status: 501 });
     const b = await body(req);
-    const { booking_id, currency } = b;
-    if (!booking_id) return NextResponse.json({ error: 'booking_id required' }, { status: 400 });
-    const bk = (await db.execute('SELECT id, total, reference FROM bookings WHERE id=?', [booking_id])).rows[0];
-    if (!bk) return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
+    const { booking_id, order_id, currency, amount: clientAmount } = b;
+    let ref = '';
+    let amount = 0;
+    let target = null;
+    if (booking_id) {
+      const bk = (await db.execute('SELECT id, total, reference FROM bookings WHERE id=?', [booking_id])).rows[0];
+      if (!bk) return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
+      target = { kind: 'booking', id: bk.id };
+      amount = Number(bk.total) * 100;
+      ref = bk.reference;
+    } else if (order_id) {
+      const o = (await db.execute('SELECT id, customer_phone, table_no FROM orders WHERE id=?', [order_id])).rows[0];
+      if (!o) return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+      target = { kind: 'order', id: o.id };
+      const items = (await db.execute('SELECT item_name AS name, price, qty FROM order_items WHERE order_id=?', [order_id])).rows;
+      amount = Math.round(items.reduce((x, i) => x + Number(i.price) * Number(i.qty), 0) * 100);
+      ref = o.table_no || `ORDER-${o.id}`;
+    } else {
+      return NextResponse.json({ error: 'booking_id or order_id required' }, { status: 400 });
+    }
     const cur = currency || ((await getSettings()).currency_symbol === '₹' ? 'INR' : 'USD');
-    const amount = Number(bk.total) * 100;
     const payload = new URLSearchParams({
-      amount: String(amount), currency: cur, 'payment_capture': '1',
-      'notes[booking_id]': String(bk.id), 'notes[reference]': bk.reference,
+      amount: String(Math.max(1, Number(clientAmount) || amount)), currency: cur, 'payment_capture': '1',
+      'notes[booking_id]': target.kind === 'booking' ? String(target.id) : '',
+      'notes[order_id]': target.kind === 'order' ? String(target.id) : '',
+      'notes[reference]': ref,
     });
     return new Promise((resolve) => {
       const auth = 'Basic ' + Buffer.from(`${key}:${secret}`).toString('base64');
@@ -367,7 +443,8 @@ async function handle(req, params) {
           try {
             const j = JSON.parse(data);
             if (j.id) {
-              db.execute("UPDATE bookings SET payment_intent_id=? WHERE id=?", [j.id, bk.id]);
+              if (target.kind === 'booking') db.execute("UPDATE bookings SET payment_intent_id=? WHERE id=?", [j.id, target.id]);
+              else db.execute("UPDATE orders SET payment_intent_id=? WHERE id=?", [j.id, target.id]);
               resolve(NextResponse.json({ ok: true, order_id: j.id, key_id: key, amount: j.amount, currency: j.currency }));
             } else {
               resolve(NextResponse.json({ error: j.error?.description || 'Razorpay error', rp: j }, { status: 402 }));
@@ -381,8 +458,42 @@ async function handle(req, params) {
     });
   }
 
-  // everything else requires a valid token
-  const user = authUser(req, url);
+  // ---------- public availability (read-only) ----------
+  if (path[0] === 'availability' && method === 'GET') {
+    const checkIn = url.searchParams.get('check_in');
+    const checkOut = url.searchParams.get('check_out');
+    const adults = Number(url.searchParams.get('adults') || 2);
+    if (!checkIn || !checkOut) return NextResponse.json({ error: 'check_in and check_out are required' }, { status: 400 });
+    try { await ensureReady(); } catch (e) { return NextResponse.json({ error: 'Database unavailable, retrying…' }, { status: 503 }); }
+    const busy = (await db.execute(
+      `SELECT DISTINCT room_id FROM bookings WHERE status NOT IN ('cancelled','checked_out') AND check_in < ? AND check_out > ?`,
+      [checkOut, checkIn]
+    )).rows.map((r) => r.room_id);
+    const busySet = new Set(busy.map((id) => Number(id)));
+    const types = (await db.execute(process.env.SITE_MODE === 'public' || process.env.SITE_MODE === 'restaurant'
+      ? 'SELECT * FROM room_types WHERE visible=1 ORDER BY price'
+      : 'SELECT * FROM room_types ORDER BY price')).rows;
+    const rooms = (await db.execute(
+      `SELECT r.*, t.name AS type_name, t.price AS type_price FROM rooms r JOIN room_types t ON t.id=r.room_type_id ORDER BY r.number`
+    )).rows;
+    const n = nights(checkIn, checkOut);
+    const freeRooms = rooms.filter((r) => r.status === 'available' && !busySet.has(Number(r.id)));
+    const result = types.map((t) => {
+      const fr = freeRooms.filter((r) => Number(r.room_type_id) === Number(t.id));
+      return {
+        ...t,
+        amenities: (t.amenities || '').split(',').map((s) => s.trim()).filter(Boolean),
+        total: Number(t.price) * n,
+        freeCount: fr.length,
+        freeRoomIds: fr.map((r) => r.id),
+        capacity: t.capacity,
+      };
+    });
+    return NextResponse.json({ nights: n, check_in: checkIn, check_out: checkOut, adults, roomTypes: result });
+  }
+
+  // everything else requires a valid token (unless the hotel disabled staff sign-in)
+  const user = authUser(req, url) || (await autoStaff());
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try { await ensureReady(); } catch (e) { return NextResponse.json({ error: 'Database unavailable, retrying…' }, { status: 503 }); }
@@ -438,9 +549,10 @@ async function handle(req, params) {
 
   // ---------- settings ----------
   if (path[0] === 'settings' && method === 'GET') return NextResponse.json(await getSettings());
-  if (path[0] === 'settings' && method === 'PUT') {
-    const b = await body(req);
-    for (const [k, v] of Object.entries(b || {})) {
+if (path[0] === 'settings' && method === 'PUT') {
+const b = await body(req);
+delete b.staff_login_enabled; // owner-only, controlled by server env; cannot be changed from the app
+for (const [k, v] of Object.entries(b || {})) {
       await db.execute('INSERT INTO hotel_settings (key,value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value', [k, String(v)]);
     }
     return NextResponse.json(await getSettings());
@@ -560,6 +672,17 @@ if (path[0] === 'import' && method === 'POST' && user.role === 'admin') {
     await db.execute(`UPDATE room_types SET ${sets.join(',')} WHERE id=?`, vals);
     return NextResponse.json({ ok: true });
   }
+  if (path[0] === 'room-types' && path[1] && method === 'DELETE') {
+    const rows = (await db.execute('SELECT id FROM rooms WHERE room_type_id=?', [path[1]])).rows;
+    if (rows.length) {
+      const ids = rows.map((r) => r.id);
+      const booked = (await db.execute(`SELECT COUNT(*) AS n FROM bookings WHERE room_id IN (${ids.map(() => '?').join(',')})`, ids)).rows[0].n;
+      if (booked > 0) return NextResponse.json({ error: 'Cannot delete: room type has bookings' }, { status: 409 });
+      await db.execute(`DELETE FROM rooms WHERE room_type_id=?`, [path[1]]);
+    }
+    await db.execute('DELETE FROM room_types WHERE id=?', [path[1]]);
+    return NextResponse.json({ ok: true });
+  }
 
   if (path[0] === 'rooms' && method === 'GET') {
     const rows = (await db.execute(
@@ -606,8 +729,8 @@ if (path[0] === 'import' && method === 'POST' && user.role === 'admin') {
               CASE WHEN b.id_proof_base64 IS NOT NULL AND b.id_proof_base64 != '' THEN 1 ELSE 0 END AS has_id_proof,
               g.name AS guest_name, g.phone AS guest_phone, r.number AS room_number,
               t.name AS room_type FROM bookings b
-       JOIN guests g ON g.id=b.guest_id JOIN rooms r ON r.id=b.room_id
-       JOIN room_types t ON t.id=r.room_type_id ORDER BY b.id DESC LIMIT 200`
+       LEFT JOIN guests g ON g.id=b.guest_id LEFT JOIN rooms r ON r.id=b.room_id
+       LEFT JOIN room_types t ON t.id=r.room_type_id ORDER BY b.id DESC LIMIT 200`
     )).rows;
     return NextResponse.json(rows);
   }
@@ -716,35 +839,12 @@ if (path[0] === 'import' && method === 'POST' && user.role === 'admin') {
     return NextResponse.json({ ok: true, total });
   }
 
-  // ---------- availability ----------
-  if (path[0] === 'availability' && method === 'GET') {
-    const checkIn = url.searchParams.get('check_in');
-    const checkOut = url.searchParams.get('check_out');
-    const adults = Number(url.searchParams.get('adults') || 2);
-    if (!checkIn || !checkOut) return NextResponse.json({ error: 'check_in and check_out are required' }, { status: 400 });
-    const busy = (await db.execute(
-      `SELECT DISTINCT room_id FROM bookings WHERE status NOT IN ('cancelled','checked_out') AND check_in < ? AND check_out > ?`,
-      [checkOut, checkIn]
-    )).rows.map((r) => r.room_id);
-    const busySet = new Set(busy.map((id) => Number(id)));
-    const types = (await db.execute('SELECT * FROM room_types ORDER BY price')).rows;
-    const rooms = (await db.execute(
-      `SELECT r.*, t.name AS type_name, t.price AS type_price FROM rooms r JOIN room_types t ON t.id=r.room_type_id ORDER BY r.number`
-    )).rows;
-    const n = nights(checkIn, checkOut);
-    const freeRooms = rooms.filter((r) => r.status === 'available' && !busySet.has(Number(r.id)));
-    const result = types.map((t) => {
-      const fr = freeRooms.filter((r) => Number(r.room_type_id) === Number(t.id));
-      return {
-        ...t,
-        amenities: (t.amenities || '').split(',').map((s) => s.trim()).filter(Boolean),
-        total: Number(t.price) * n,
-        freeCount: fr.length,
-        freeRoomIds: fr.map((r) => r.id),
-        capacity: t.capacity,
-      };
-    });
-    return NextResponse.json({ nights: n, check_in: checkIn, check_out: checkOut, adults, roomTypes: result });
+  if (path[0] === 'bookings' && path[1] && method === 'DELETE') {
+    const b = (await db.execute('SELECT * FROM bookings WHERE id=?', [path[1]])).rows[0];
+    if (!b) return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
+    if (b.status !== 'inquiry') return NextResponse.json({ error: 'Only inquiries can be deleted. Cancel confirmed bookings instead.' }, { status: 400 });
+    await db.execute('DELETE FROM bookings WHERE id=?', [path[1]]);
+    return NextResponse.json({ ok: true });
   }
 
   // ---------- restaurant menu ----------
@@ -796,7 +896,10 @@ if (path[0] === 'import' && method === 'POST' && user.role === 'admin') {
 
   // ---------- restaurant reservations (from public website) ----------
   if (path[0] === 'restaurant' && path[1] === 'reservations' && method === 'GET') {
-    return NextResponse.json((await db.execute('SELECT * FROM table_reservations ORDER BY id DESC LIMIT 100')).rows);
+    const rows = (await db.execute(
+      `SELECT r.*, t.number AS table_number FROM table_reservations r LEFT JOIN tables t ON t.id = r.table_id ORDER BY r.id DESC LIMIT 100`
+    )).rows;
+    return NextResponse.json(rows);
   }
   if (path[0] === 'restaurant' && path[1] === 'reservations' && path[2] && method === 'PUT') {
     const b = await body(req);
@@ -873,7 +976,7 @@ if (path[0] === 'import' && method === 'POST' && user.role === 'admin') {
     if (!channel) return NextResponse.json({ error: 'Channel not found' }, { status: 404 });
     const s = (await db.execute("SELECT value FROM hotel_settings WHERE key='hotel_name'")).rows[0];
     const cur = (await db.execute("SELECT value FROM hotel_settings WHERE key='currency_symbol'")).rows[0];
-    const ctx = { hotel_name: s?.value || 'Hotel Lakshmi Deluxe', currency: cur?.value || '₹' };
+    const ctx = { hotel_name: s?.value || 'Hotel Lakshmi Elite', currency: cur?.value || '₹' };
     const result = await syncChannel(channel, ctx);
     return NextResponse.json(result);
   }
@@ -881,7 +984,7 @@ if (path[0] === 'import' && method === 'POST' && user.role === 'admin') {
     const rows = (await db.execute('SELECT * FROM channels WHERE enabled=1')).rows;
     const s = (await db.execute("SELECT value FROM hotel_settings WHERE key='hotel_name'")).rows[0];
     const cur = (await db.execute("SELECT value FROM hotel_settings WHERE key='currency_symbol'")).rows[0];
-    const ctx = { hotel_name: s?.value || 'Hotel Lakshmi Deluxe', currency: cur?.value || '₹' };
+    const ctx = { hotel_name: s?.value || 'Hotel Lakshmi Elite', currency: cur?.value || '₹' };
     const out = [];
     for (const ch of rows) {
       try { out.push({ code: ch.code, ...(await syncChannel(ch, ctx)) }); } catch (e) { out.push({ code: ch.code, error: e.message }); }
@@ -1148,7 +1251,26 @@ if (path[0] === 'import' && method === 'POST' && user.role === 'admin') {
   return NextResponse.json({ error: 'Not found' }, { status: 404 });
 }
 
-export async function GET(req, ctx) { return handle(req, ctx.params); }
-export async function POST(req, ctx) { return handle(req, ctx.params); }
-export async function PUT(req, ctx) { return handle(req, ctx.params); }
-export async function DELETE(req, ctx) { return handle(req, ctx.params); }
+export async function GET(req, ctx) { return withCors(await handle(req, ctx.params)); }
+export async function POST(req, ctx) { return withCors(await handle(req, ctx.params)); }
+export async function PUT(req, ctx) { return withCors(await handle(req, ctx.params)); }
+export async function DELETE(req, ctx) { return withCors(await handle(req, ctx.params)); }
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Max-Age': '86400',
+    },
+  });
+}
+function withCors(res) {
+  if (res && typeof res.headers?.set === 'function') {
+    res.headers.set('Access-Control-Allow-Origin', '*');
+    res.headers.set('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+    res.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  }
+  return res;
+}

@@ -113,14 +113,14 @@ export async function pullChannel(channel, ctx) {
       "SELECT id FROM rooms WHERE room_type_id=? AND status='available' AND id NOT IN (SELECT room_id FROM bookings WHERE status NOT IN ('cancelled','checked_out') AND datetime(check_out) > datetime('now')) LIMIT 1",
       [roomTypeId])).rows[0];
     if (!room) {
-      await logSync(channel.code, 'pull', 'error', `Rejected ${ref} (${s.guest}) â€” no available room of type ${roomTypeId}`);
+      await logSync(channel.code, 'pull', 'error', `Rejected ${ref} (${s.guest}) — no available room of type ${roomTypeId}`);
       continue;
     }
     const g = await db.execute('INSERT INTO guests (name, phone) VALUES (?,?)', [s.guest, s.phone || '']);
     await db.execute(
       'INSERT INTO bookings (guest_id, room_id, check_in, check_out, adults, status, total, source, reference, channel, channel_ref, payment_status) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
       [Number(g.lastInsertRowid), room.id, ci, co, Number(s.adults) || 2, 'pending', total, 'channel', ref, channel.code, ref, 'channel']);
-    await logSync(channel.code, 'pull', 'ok', `Imported ${ref} â€” ${s.guest} (${ci} â†’ ${co})`);
+    await logSync(channel.code, 'pull', 'ok', `Imported ${ref} — ${s.guest} (${ci} → ${co})`);
     incoming.push({ channel_ref: ref, guest_name: s.guest, check_in: ci, check_out: co, total });
   }
 
@@ -151,7 +151,7 @@ export async function autoSyncChannels() {
     if (rows.length === 0) return;
     const s = (await db.execute("SELECT value FROM hotel_settings WHERE key='hotel_name'")).rows[0];
     const cur = (await db.execute("SELECT value FROM hotel_settings WHERE key='currency_symbol'")).rows[0];
-    const ctx = { hotel_name: s?.value || 'Hotel Lakshmi Deluxe', currency: cur?.value || '₹' };
+    const ctx = { hotel_name: s?.value || 'Hotel Lakshmi Elite', currency: cur?.value || '₹' };
     for (const ch of rows) {
       try { await syncChannel(ch, ctx); } catch {}
     }
