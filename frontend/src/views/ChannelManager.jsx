@@ -52,14 +52,14 @@ export default function ChannelManager() {
 
   const openCfg = (ch) => {
     setCfg(ch);
-    setCfgForm({ rate_multiplier: ch.rate_multiplier || 1, api_key: ch.credentials?.api_key || '', endpoint_url: ch.credentials?.endpoint_url || '', property_id: ch.credentials?.property_id || '', base_url: ch.credentials?.base_url || 'staging', rate_plan_ids: { ...(ch.credentials?.rate_plan_ids || {}) }, room_map: { ...(ch.room_map || {}) } });
+    setCfgForm({ rate_multiplier: ch.rate_multiplier || 1, api_key: ch.credentials?.api_key || '', endpoint_url: ch.credentials?.endpoint_url || '', property_id: ch.credentials?.property_id || '', base_url: ch.credentials?.base_url || 'staging', channel_id: ch.credentials?.channel_id || '', hotel_id: ch.credentials?.hotel_id || '', env: ch.credentials?.env || '1', rate_plan_ids: { ...(ch.credentials?.rate_plan_ids || {}) }, room_map: { ...(ch.room_map || {}) } });
   };
 
   const saveCfg = async (e) => {
     e.preventDefault();
     await put(`/channels/${cfg.id}`, {
       rate_multiplier: Number(cfgForm.rate_multiplier) || 1,
-      credentials: { api_key: cfgForm.api_key, endpoint_url: cfgForm.endpoint_url, property_id: cfgForm.property_id, base_url: cfgForm.base_url, rate_plan_ids: cfgForm.rate_plan_ids },
+      credentials: { api_key: cfgForm.api_key, endpoint_url: cfgForm.endpoint_url, property_id: cfgForm.property_id, base_url: cfgForm.base_url, channel_id: cfgForm.channel_id, hotel_id: cfgForm.hotel_id, env: cfgForm.env, rate_plan_ids: cfgForm.rate_plan_ids },
       room_map: cfgForm.room_map,
     });
     toast(`${cfg.name} settings saved`);
@@ -195,6 +195,42 @@ export default function ChannelManager() {
               <input type="number" step="0.05" min="0.1" max="10" value={cfgForm.rate_multiplier} onChange={(e) => setCfgForm((f) => ({ ...f, rate_multiplier: e.target.value }))} />
               <label style={{ marginTop: 10 }}>API key / login (leave empty in practice mode)</label>
               <input type="password" value={cfgForm.api_key} onChange={(e) => setCfgForm((f) => ({ ...f, api_key: e.target.value }))} placeholder="••••••••" />
+              {cfg.code === 'axisrooms' && (
+                <>
+                  <label style={{ marginTop: 10 }}>AxisRooms Channel ID (PMS client id)</label>
+                  <input type="text" value={cfgForm.channel_id} onChange={(e) => setCfgForm((f) => ({ ...f, channel_id: e.target.value }))} placeholder="AxisRoomsClientId" />
+                  <label style={{ marginTop: 10 }}>Hotel ID (given by AxisRooms at onboarding)</label>
+                  <input type="text" value={cfgForm.hotel_id} onChange={(e) => setCfgForm((f) => ({ ...f, hotel_id: e.target.value }))} placeholder="e.g. S50010" />
+                  <label style={{ marginTop: 10 }}>Environment number (sandbox: 1–9, prod: given by AxisRooms)</label>
+                  <input type="text" value={cfgForm.env} onChange={(e) => setCfgForm((f) => ({ ...f, env: e.target.value }))} placeholder="1" />
+                  <label style={{ marginTop: 10 }}>Mode</label>
+                  <select value={cfgForm.base_url} onChange={(e) => setCfgForm((f) => ({ ...f, base_url: e.target.value }))}>
+                    <option value="staging">Sandbox (test)</option>
+                    <option value="prod">Production</option>
+                  </select>
+                  <p className="sub" style={{ marginTop: 8 }}>Room map = AxisRooms room IDs. Rate plan IDs per type below (optional but recommended). First sync auto-registers hotel + rooms + rate plans. Give AxisRooms this webhook URL for instant booking pushes: <b>https://laxmielite-erp.vercel.app/api/axisrooms-webhook</b></p>
+                  {roomTypes.map((t) => (
+                    <div key={t.id} className="row" style={{ gap: 10, marginTop: 6 }}>
+                      <span style={{ fontSize: 12, minWidth: 140 }}>{t.name}</span>
+                      <input
+                        type="text"
+                        style={{ flex: 1 }}
+                        placeholder="AxisRooms rate plan id"
+                        value={cfgForm.rate_plan_ids[String(t.id)] || ''}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setCfgForm((f) => {
+                            const ids = { ...f.rate_plan_ids };
+                            if (val === '') delete ids[String(t.id)];
+                            else ids[String(t.id)] = val;
+                            return { ...f, rate_plan_ids: ids };
+                          });
+                        }}
+                      />
+                    </div>
+                  ))}
+                </>
+              )}
               {cfg.code === 'channex' && (
                 <>
                   <label style={{ marginTop: 10 }}>Channex Property ID (from staging/app.channex.io → property)</label>

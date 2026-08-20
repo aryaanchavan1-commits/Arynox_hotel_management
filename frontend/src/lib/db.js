@@ -412,6 +412,10 @@ async function seed() {
   if (Number(chx.rows[0].c) === 0) {
     await db.execute("INSERT INTO channels (code, name, enabled, auto_sync, practice, emoji_hint) VALUES ('channex','Channex','0',1,1,'🔌')");
   }
+  const ar = await db.execute("SELECT COUNT(*) AS c FROM channels WHERE code='axisrooms'");
+  if (Number(ar.rows[0].c) === 0) {
+    await db.execute("INSERT INTO channels (code, name, enabled, auto_sync, practice, emoji_hint) VALUES ('axisrooms','AxisRooms','0',1,1,'🎛️')");
+  }
 
   const brand = 'Hotel Lakshmi Elite';
   const migrateBrand = (key, value) =>

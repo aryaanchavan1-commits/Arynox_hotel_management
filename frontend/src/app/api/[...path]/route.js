@@ -4,7 +4,7 @@ import { signToken, verifyToken, hash, SALT, isGuestToken, isStaffToken } from '
 import { ROLES } from '@/lib/roles';
 import { buildEscPos, htmlReceipt } from '@/lib/receipt';
 import { chat, websiteChat } from '@/lib/ai';
-import { syncChannel, autoSyncChannels } from '@/lib/channels';
+import { syncChannel, autoSyncChannels, axisroomsWebhook } from '@/lib/channels';
 import { Groq } from 'groq-sdk';
 import https from 'node:https';
 
@@ -85,6 +85,14 @@ async function handle(req, params) {
     }
   }
 
+  // AxisRooms webhook receiver: AxisRooms pushes booking notifications (confirmed/modified/cancelled)
+  // here in real time. Authenticated by matching the accessKey against the configured channel.
+  if (path[0] === 'axisrooms-webhook' && method === 'POST') {
+    try { await ensureReady(); } catch (e) { return NextResponse.json({ status: 'failure', message: 'Database unavailable' }, { status: 503 }); }
+    const p = await body(req).catch(() => ({}));
+    const r = await axisroomsWebhook(p).catch((e) => ({ status: 'failure', message: e.message }));
+    return NextResponse.json(r, r.status === 'success' ? {} : { status: 400 });
+  }
   // public endpoints
   if (path[0] === 'health' && method === 'GET') {
     return NextResponse.json({ ok: true, service: 'arynox-hotel-backend', time: new Date().toISOString() });

@@ -24,6 +24,118 @@ async function channexApi(creds, path, method = 'GET', body) {
   return res.json().catch(() => ({}));
 }
 
+const AXISROOMS_SANDBOX_SETUP = 'https://sandbox-pms.axisrooms.com';
+const AXISROOMS_SANDBOX_TX = 'https://sandbox{ENV}.axisrooms.com/api';
+const AXISROOMS_PROD_SETUP = 'https://pms.axisrooms.com';
+const AXISROOMS_PROD_TX = 'https://{ENV}.axisrooms.com/api';
+
+function axisroomsUrls(creds) {
+  const env = creds.env || '1';
+  const prod = creds.base_url === 'prod';
+  const txBase = creds.tx_url || (prod ? AXISROOMS_PROD_TX : AXISROOMS_SANDBOX_TX).replace('{ENV}', env);
+  const setupBase = creds.setup_url || (prod ? AXISROOMS_PROD_SETUP : AXISROOMS_SANDBOX_SETUP);
+  return { txBase, setupBase, env };
+}
+
+async function axisroomsCall(url, body, label) {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const text = await res.text().catch(() => '');
+  if (!res.ok) throw new Error(`AxisRooms ${label} HTTP ${res.status}: ${text.slice(0, 200)}`);
+  let j = {};
+  try { j = JSON.parse(text); } catch {}
+  if (j.status && String(j.status).toLowerCase() === 'failure' && !/already exist/i.test(String(j.message || ''))) {
+    throw new Error(`AxisRooms ${label} failed: ${j.message || 'unknown error'}`);
+  }
+  return j;
+}
+
+async function axisroomsSetup(channel, creds, map, ratePlans, types) {
+  const { setupBase } = axisroomsUrls(creds);
+  const auth = { channelId: creds.channel_id, accessKey: creds.api_key };
+  const hotelId = creds.hotel_id;
+  await axisroomsCall(`${setupBase}/api/hotel/create`, {
+    ...auth,
+    data: [{
+      hotelId, hotelName: 'Hotel Lakshmi Elite', city: 'Karad', country: 'India', currency: 'INR',
+      address: 'Narayanwadi, Pachwad Phata, Karad, Maharashtra', state: 'Maharashtra', postalCode: 415539,
+      roomQuantity: 20, starRating: 3, checkInTime: '12 Hour', checkOutTime: '11 Hour',
+      amenities: 'AC,TV,Free WiFi,In-House Restaurant,Parking Facility,Banquet Hall,24-Hour Front Desk,Rooms with Balcony',
+    }],
+  }, 'hotel setup');
+  const rooms = Object.entries(map).map(([ourId, roomId]) => ({
+    hotelId, roomId: String(roomId), roomName: (types.find((t) => String(t.id) === String(ourId)) || {}).name || 'Room',
+  }));
+  if (rooms.length) await axisroomsCall(`${setupBase}/api/room/create`, { ...auth, data: rooms }, 'room setup');
+  const plans = Object.entries(ratePlans).map(([ourId, planId]) => ({
+    hotelId, rateplanId: String(planId), rateplanName: ((types.find((t) => String(t.id) === String(ourId)) || {}).name || 'Room') + ' BAR',
+  }));
+  if (plans.length) await axisroomsCall(`${setupBase}/api/rateplan/create`, { ...auth, data: plans }, 'rateplan setup');
+  await db.execute('UPDATE channels SET credentials_json=? WHERE id=?', [JSON.stringify({ ...creds, registered: 'yes' }), channel.id]);
+}
+
+function axisroomsImport(ch, ref, b, map, incoming, existingByRef) {
+  const bd = b.BookingDetails || {};
+  const cd = b.CheckinDetails || {};
+  const gd = b.GuestDetails || {};
+  const roomTypeId = Number(Object.keys(map).find((k) => String(map[k]) === String(((b.Rates || {}).roomType || [])[0]?.id)) || Object.keys(map)[0]);
+  const ci = (cd.checkInDateTime || cd.checkInDate || '').slice(0, 10);
+  const co = (cd.checkOutDateTime || cd.checkOutDate || '').slice(0, 10);
+  if (bd.bookingStatus === 'cancelled') {
+    const bid = existingByRef[ref];
+    if (bid) {
+      return db.execute("UPDATE bookings SET status='cancelled' WHERE id=?", [bid]).then(async () => {
+        const b2 = (await db.execute('SELECT room_id FROM bookings WHERE id=?', [bid])).rows[0];
+        if (b2) await db.execute("UPDATE rooms SET status='available' WHERE id=?", [b2.room_id]);
+      });
+    }
+    return Promise.resolve();
+  }
+  const bid = existingByRef[ref];
+  if (bid) {
+    return db.execute('UPDATE bookings SET check_in=?, check_out=?, adults=? WHERE id=?', [ci, co, Number(cd.totalPax) || 2, bid]);
+  }
+  return db.execute(
+    "SELECT id FROM rooms WHERE room_type_id=? AND status='available' AND id NOT IN (SELECT room_id FROM bookings WHERE status NOT IN ('cancelled','checked_out') AND datetime(check_out) > datetime('now')) LIMIT 1",
+    [roomTypeId]).then(async (rr) => {
+    const room = rr.rows[0];
+    if (!room) {
+      await logSync(ch.code, 'pull', 'error', `Rejected ${ref} — no available room of type ${roomTypeId}`);
+      return;
+    }
+    const g = await db.execute('INSERT INTO guests (name, phone) VALUES (?,?)', [gd.guestName || 'OTA Guest', gd.mobileNo || '']);
+    const total = Number(cd.totalAmount) || 0;
+    await db.execute(
+      'INSERT INTO bookings (guest_id, room_id, check_in, check_out, adults, status, total, source, reference, channel, channel_ref, payment_status) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
+      [Number(g.lastInsertRowid), room.id, ci, co, Number(cd.totalPax) || 2, 'pending', total, 'channel', ref, ch.code, ref, 'channel']);
+    incoming.push({ channel_ref: ref, guest_name: gd.guestName || 'OTA Guest', check_in: ci, check_out: co, total });
+    await logSync(ch.code, 'pull', 'ok', `Imported ${ref} — ${gd.guestName || 'OTA Guest'} (${ci} → ${co})`);
+  });
+}
+
+export async function axisroomsWebhook(payload) {
+  const rows = (await db.execute("SELECT * FROM channels WHERE code='axisrooms' AND enabled=1")).rows;
+  const ch = rows[0];
+  if (!ch) return { status: 'failure', message: 'no axisrooms channel configured' };
+  const creds = JSON.parse(ch.credentials_json || '{}');
+  if (creds.api_key && payload.accessKey && payload.accessKey !== creds.api_key) {
+    return { status: 'failure', message: 'invalid access key' };
+  }
+  const bd = payload.BookingDetails || {};
+  const ref = `CH-AXISROOMS-${bd.bookingNo || ''}`;
+  if (!bd.bookingNo) return { status: 'failure', message: 'missing bookingNo' };
+  const map = JSON.parse(ch.room_map_json || '{}');
+  const existing = (await db.execute("SELECT channel_ref, id FROM bookings WHERE channel='axisrooms' AND status!='cancelled'")).rows;
+  const existingByRef = {};
+  for (const e of existing) existingByRef[e.channel_ref] = e.id;
+  const incoming = [];
+  await axisroomsImport(ch, ref, payload, map, incoming, existingByRef);
+  return { status: 'success', message: 'Booking Update Received' };
+}
+
 export async function computeChannelInventory() {
   const types = (await db.execute('SELECT id, name, price FROM room_types ORDER BY price')).rows;
   const inv = [];
@@ -85,6 +197,46 @@ export async function pushChannel(channel, ctx) {
         await channexApi(creds, '/availability', 'POST', { values: avValues });
         if (rateValues.length > 0) await channexApi(creds, '/restrictions', 'POST', { values: rateValues });
         detail = `Channex ARI pushed (${avValues.length / Math.max(1, dates.length)} room type(s) × ${days} days, ${rateValues.length > 0 ? 'rates included' : 'no rate plans mapped'})`;
+      }
+    } catch (e) {
+      ok = false;
+      detail = e.message;
+    }
+    return { ok, detail, payload };
+  }
+
+  if (channel.code === 'axisrooms' && Number(channel.practice) === 0 && creds.api_key && creds.channel_id && creds.hotel_id) {
+    try {
+      const map = JSON.parse(channel.room_map_json || '{}');
+      const ratePlans = typeof creds.rate_plan_ids === 'string' ? JSON.parse(creds.rate_plan_ids || '{}') : (creds.rate_plan_ids || {});
+      const { txBase, env } = axisroomsUrls(creds);
+      const auth = { channelId: creds.channel_id, accessKey: creds.api_key };
+      const types = (await db.execute('SELECT id, name, price FROM room_types')).rows;
+      if (creds.registered !== 'yes') await axisroomsSetup(channel, creds, map, ratePlans, types);
+      const days = 60;
+      const dayAt = (i) => new Date(Date.now() + i * 86400000).toISOString().slice(0, 10);
+      const dates = Array.from({ length: days }, (_, i) => dayAt(i));
+      const active = (await db.execute("SELECT room_id, check_in, check_out FROM bookings WHERE status NOT IN ('cancelled','checked_out')")).rows;
+      const rooms = (await db.execute('SELECT id, room_type_id FROM rooms')).rows;
+      const hotels = [{ hotelId: creds.hotel_id, rooms: [] }];
+      for (const [ourTypeId, chRoomId] of Object.entries(map)) {
+        const invItem = inv.find((i) => String(i.room_type_id) === String(ourTypeId));
+        if (!invItem) continue;
+        const typeRooms = rooms.filter((r) => Number(r.room_type_id) === Number(ourTypeId));
+        const availability = dates.map((d) => ({
+          date: d,
+          free: Math.max(0, typeRooms.length - active.filter((b) => b.check_in < d && b.check_out > d && typeRooms.some((r) => Number(r.id) === Number(b.room_id))).length),
+        }));
+        const priceDetails = dates.map((d) => ({ date: d, price: { Double: Math.round(invItem.base_rate * Number(channel.rate_multiplier || 1) * 100) / 100 } }));
+        const room = { roomId: String(chRoomId), availability };
+        const planId = ratePlans[ourTypeId];
+        if (planId) room.rateplans = [{ rateplanId: String(planId), priceDetails }];
+        hotels[0].rooms.push(room);
+      }
+      if (hotels[0].rooms.length > 0) {
+        await axisroomsCall(`${txBase}/daywiseInventory${env}`, { ...auth, hotels }, 'inventory');
+        await axisroomsCall(`${txBase}/daywisePrice${env}`, { ...auth, hotels }, 'price');
+        detail = `AxisRooms ARI pushed (${hotels[0].rooms.length} room type(s) × ${days} days${Object.keys(ratePlans).length > 0 ? ', rates included' : ', no rate plans mapped'})`;
       }
     } catch (e) {
       ok = false;
@@ -184,6 +336,43 @@ export async function pullChannel(channel, ctx) {
       return { ok: true, bookings: incoming, detail: `Channex feed: ${created} new, ${updated} modified, ${cancelled} cancelled (${revisions.length} revision(s) processed)` };
     } catch (e) {
       return { ok: false, bookings: [], detail: 'Channex feed failed: ' + e.message };
+    }
+  }
+
+  // ---------- AxisRooms live: pull booking (reconciliation/primary fallback), 10-day windows ----------
+  if (channel.code === 'axisrooms' && Number(channel.practice) === 0 && creds.api_key && creds.channel_id && creds.hotel_id) {
+    try {
+      const { txBase, env } = axisroomsUrls(creds);
+      const auth = { channelId: creds.channel_id, accessKey: creds.api_key };
+      const toAr = (d) => { const [y, m, dd] = String(d).split('-'); return `${dd}/${m}/${y}`; };
+      let created = 0;
+      let updated = 0;
+      let cancelled = 0;
+      const today = new Date();
+      for (let i = 19; i >= 0; i -= 9) {
+        const start = new Date(today.getTime() - i * 86400000);
+        const end = new Date(today.getTime() - Math.max(0, i - 9) * 86400000);
+        const res = await axisroomsCall(`${txBase}/pullBooking${env}`, { ...auth, hotelId: creds.hotel_id, startDate: toAr(start.toISOString().slice(0, 10)), endDate: toAr(end.toISOString().slice(0, 10)) }, 'pullBooking');
+        const list = Array.isArray(res) ? res : (res.BookingDetails ? [res] : []);
+        for (const b of list) {
+          const bd = b.BookingDetails || {};
+          const ref = channelRef + (bd.bookingNo || '');
+          if (!bd.bookingNo) continue;
+          if (bd.bookingStatus === 'cancelled') {
+            const before = existingByRef[ref];
+            await axisroomsImport(channel, ref, b, map, incoming, existingByRef);
+            if (before && !existingByRef[ref]) cancelled++;
+            continue;
+          }
+          const was = existingByRef[ref];
+          await axisroomsImport(channel, ref, b, map, incoming, existingByRef);
+          if (was) updated++;
+          else if (incoming.some((x) => x.channel_ref === ref)) created++;
+        }
+      }
+      return { ok: true, bookings: incoming, detail: `AxisRooms pull: ${created} new, ${updated} modified, ${cancelled} cancelled` };
+    } catch (e) {
+      return { ok: false, bookings: [], detail: 'AxisRooms pull failed: ' + e.message };
     }
   }
 
