@@ -23,9 +23,18 @@ export default function OtaOps() {
 
   useEffect(() => { load(); }, [days]);
 
+  const safeData = () => {
+    const d = data || {};
+    const horizon = Array.isArray(d.horizon) ? d.horizon : [];
+    const todayRows = Array.isArray(d.todayRows) ? d.todayRows : [];
+    const counts = d.channelCounts && typeof d.channelCounts === 'object' && !Array.isArray(d.channelCounts) ? d.channelCounts : {};
+    const t = horizon[0] || { date: d.today || new Date().toISOString().slice(0, 10), occupancy: 0, arrivals: 0, departures: 0, perType: [] };
+    return { horizon, todayRows, counts, t };
+  };
+
   const punchSummary = () => {
     if (!data) return '';
-    const t = data.horizon[0];
+    const { t } = safeData();
     const lines = [`📋 OTA UPDATE — ${dayName(t.date)}`, ''];
     for (const p of t.perType) {
       lines.push(`${p.name}: ${p.free} free / ${p.total} (₹${p.rate}/night)`);
@@ -45,8 +54,8 @@ export default function OtaOps() {
   const aiSummary = async () => {
     setAiBusy(true);
     setAiMsg('');
-    const t = data.horizon[0];
-    const payload = punchSummary() + '\nOccupancy today: ' + t.occupancy + '%. Arrivals: ' + t.arrivals + ', departures: ' + t.departures + '. Tonight in-house: ' + JSON.stringify(data.channelCounts) + '.';
+    const { t, counts } = safeData();
+    const payload = punchSummary() + '\nOccupancy today: ' + t.occupancy + '%. Arrivals: ' + t.arrivals + ', departures: ' + t.departures + '. Tonight in-house: ' + JSON.stringify(counts) + '.';
     try {
       const r = await post('/ai/chat', { message: 'You are the hotel ops assistant. Using ONLY this data, write a 3-line briefing for the owner about tonight and tomorrow, and flag any risk (e.g., sold out type) and what to update on OTA extranets. Data: ' + payload });
       setAiMsg(r.reply || 'No reply.');
@@ -86,10 +95,11 @@ export default function OtaOps() {
   };
 
   if (!data) return <div className="page"><div className="page-head"><h1>🌐 OTA Daily Ops</h1></div><div className="card"><p className="sub">Loading…</p></div></div>;
+  if (data.error) return <div className="page"><div className="page-head"><h1>🌐 OTA Daily Ops</h1></div><div className="msg err" style={{ marginTop: 12 }}>{data.error}</div></div>;
 
-  const t = data.horizon[0];
-  const arrivals = data.todayRows.filter((b) => b.check_in === data.today && b.status !== 'checked_in');
-  const departures = data.todayRows.filter((b) => b.check_out === data.today);
+  const { horizon, todayRows, counts, t } = safeData();
+  const arrivals = todayRows.filter((b) => b.check_in === data.today && b.status !== 'checked_in');
+  const departures = todayRows.filter((b) => b.check_out === data.today);
 
   return (
     <div className="page">
@@ -109,7 +119,7 @@ export default function OtaOps() {
         <div className="kpi-card info"><div className="kpi-top"><p className="kpi-label">Tonight</p><span className="kpi-icon">🌙</span></div><p className="kpi-value">{t.occupancy}%</p></div>
         <div className="kpi-card ok"><div className="kpi-top"><p className="kpi-label">Arrivals</p><span className="kpi-icon">🛬</span></div><p className="kpi-value">{t.arrivals}</p></div>
         <div className="kpi-card warn"><div className="kpi-top"><p className="kpi-label">Departures</p><span className="kpi-icon">🚪</span></div><p className="kpi-value">{t.departures}</p></div>
-        <div className="kpi-card info"><div className="kpi-top"><p className="kpi-label">In-house</p><span className="kpi-icon">🛏️</span></div><p className="kpi-value">{Object.values(data.channelCounts).reduce((a, b) => a + b, 0)}</p></div>
+        <div className="kpi-card info"><div className="kpi-top"><p className="kpi-label">In-house</p><span className="kpi-icon">🛏️</span></div><p className="kpi-value">{Object.values(counts).reduce((a, b) => a + b, 0)}</p></div>
       </div>
 
       <div className="card" style={{ marginTop: 16 }}>
@@ -124,14 +134,14 @@ export default function OtaOps() {
             <thead>
               <tr>
                 <th>Room type</th>
-                {data.horizon.map((h) => <th key={h.date}>{dayName(h.date)}</th>)}
+                {horizon.map((h) => <th key={h.date}>{dayName(h.date)}</th>)}
               </tr>
             </thead>
             <tbody>
               {t.perType.map((pt) => (
                 <tr key={pt.type_id}>
                   <td><b>{pt.name}</b> <small style={{ color: 'var(--muted)' }}>₹{pt.rate}</small></td>
-                  {data.horizon.map((h) => {
+                  {horizon.map((h) => {
                     const p = h.perType.find((x) => x.type_id === pt.type_id);
                     const tone = p.free === 0 ? '#e05252' : p.free <= Math.ceil(p.total / 4) ? '#d9a20f' : '#179e63';
                     return <td key={h.date} style={{ textAlign: 'center', color: tone, fontWeight: 700, whiteSpace: 'nowrap' }}>{p.free}/{p.total}</td>;
@@ -140,7 +150,7 @@ export default function OtaOps() {
               ))}
               <tr>
                 <td><b>Arr / Dep</b></td>
-                {data.horizon.map((h) => <td key={h.date} style={{ textAlign: 'center', fontSize: 12, color: 'var(--muted)' }}>▲{h.arrivals} ▼{h.departures}</td>)}
+                {horizon.map((h) => <td key={h.date} style={{ textAlign: 'center', fontSize: 12, color: 'var(--muted)' }}>▲{h.arrivals} ▼{h.departures}</td>)}
               </tr>
             </tbody>
           </table>
@@ -152,11 +162,11 @@ export default function OtaOps() {
         <div className="between">
           <h3>🛬 Today — arrivals ({arrivals.length}) · 🚪 departures ({departures.length})</h3>
         </div>
-        {data.todayRows.length === 0 ? <p className="sub" style={{ marginTop: 8 }}>Nothing arriving or departing today.</p> : (
+        {todayRows.length === 0 ? <p className="sub" style={{ marginTop: 8 }}>Nothing arriving or departing today.</p> : (
           <table className="table">
             <thead><tr><th>Guest</th><th>Room</th><th>Type</th><th>Channel</th><th>Status</th></tr></thead>
             <tbody>
-              {data.todayRows.map((b) => (
+              {todayRows.map((b) => (
                 <tr key={b.id}>
                   <td>{b.guest_name}<br /><small style={{ color: 'var(--muted)' }}>{b.phone}</small></td>
                   <td>{b.room_number}</td>
@@ -181,7 +191,7 @@ export default function OtaOps() {
               </select>
               <select style={{ flex: 1, minWidth: 140 }} value={form.room_type_id} onChange={(e) => setForm({ ...form, room_type_id: e.target.value })} required>
                 <option value="">Room type…</option>
-                {data.horizon[0].perType.map((p) => <option key={p.type_id} value={p.type_id} disabled={p.free === 0}>{p.name} ({p.free} free)</option>)}
+                {t.perType.map((p) => <option key={p.type_id} value={p.type_id} disabled={p.free === 0}>{p.name} ({p.free} free)</option>)}
               </select>
             </div>
             <input value={form.guest_name} onChange={(e) => setForm({ ...form, guest_name: e.target.value })} placeholder="Guest name" required />
